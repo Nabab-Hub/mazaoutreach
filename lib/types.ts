@@ -227,3 +227,14 @@ export interface Reply {
   draftReplyId?: string;
   lead?: Lead;
 }
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'lead_interested' | 'needs_human' | 'followup_sent' | 'system';
+  leadId?: string;
+  read: boolean;
+  createdAt: string;
+  link?: string;
+}
