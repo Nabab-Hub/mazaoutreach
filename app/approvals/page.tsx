@@ -84,17 +84,21 @@ export default function ApprovalsPage() {
   };
 
   // Generate drafts for new leads
-  const handleBatchGenerate = async () => {
+  const handleBatchGenerate = async (forceAll: boolean = false) => {
     setGenerating(true);
     try {
       const res = await fetch('/api/drafts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate' }),
+        body: JSON.stringify({ action: 'generate', forceAll }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast('success', `Generated ${data.generated} personalized drafts successfully!`);
+        if (data.generated > 0) {
+          showToast('success', `Generated ${data.generated} personalized drafts successfully!`);
+        } else {
+          showToast('success', data.message || 'All current leads already have drafts.');
+        }
         fetchDrafts();
       } else {
         showToast('error', data.error || 'Failed to generate drafts');
@@ -266,12 +270,13 @@ export default function ApprovalsPage() {
           </p>
         </div>
 
-        {/* Quick Batch Generate Button */}
-        <div className="flex items-center gap-3">
+        {/* Quick Batch Generate Buttons */}
+        <div className="flex items-center gap-2.5">
           <button
-            onClick={handleBatchGenerate}
+            onClick={() => handleBatchGenerate(false)}
             disabled={generating}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+            title="Generate AI drafts for newly added leads"
           >
             {generating ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -279,6 +284,15 @@ export default function ApprovalsPage() {
               <Bot className="w-4 h-4" />
             )}
             <span>{generating ? 'Drafting Leads...' : 'Generate Drafts for New Leads'}</span>
+          </button>
+
+          <button
+            onClick={() => handleBatchGenerate(true)}
+            disabled={generating}
+            className="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all disabled:opacity-50"
+            title="Generate fresh personalized drafts for all leads in the database"
+          >
+            Draft for All Leads
           </button>
         </div>
       </div>
@@ -382,7 +396,7 @@ export default function ApprovalsPage() {
             </p>
           </div>
           <button
-            onClick={handleBatchGenerate}
+            onClick={() => handleBatchGenerate(false)}
             disabled={generating}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium"
           >

@@ -338,11 +338,35 @@ export default function LeadsPage() {
               Clear Selection
             </button>
             <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  const res = await fetch('/api/drafts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'generate', leadIds: Array.from(selectedLeadIds) }),
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    window.location.href = '/approvals';
+                  }
+                } catch (e) {
+                  console.error(e);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-semibold shadow-lg shadow-indigo-950/50 transition-all"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Generate Drafts ({selectedLeadIds.size})</span>
+            </button>
+            <button
               onClick={() => setShowBulkDeleteModal(true)}
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold shadow-lg shadow-rose-950/50 transition-all"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              <span>Delete Selected ({selectedLeadIds.size})</span>
+              <span>Delete Selected</span>
             </button>
           </div>
         </div>

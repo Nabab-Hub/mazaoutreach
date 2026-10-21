@@ -25,15 +25,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-[#090d16] text-slate-100 min-h-screen flex antialiased">
+    <html lang="en" className="dark h-full">
+      <body className="bg-[#090d16] text-slate-100 h-screen overflow-hidden flex antialiased">
         <AuthProvider>
-          <div className="flex w-full min-h-screen">
-            {/* Left Persistent Navigation */}
+          <div className="flex w-full h-full overflow-hidden">
+            {/* Left Persistent Navigation (Fixed, Non-scrolling with page) */}
             <Sidebar />
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#090d16]">
+            {/* Main Content Area (Independent scroll) */}
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#090d16]">
               <Navbar />
               <main className="flex-1 overflow-y-auto">{children}</main>
             </div>

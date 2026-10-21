@@ -40,15 +40,22 @@ export async function POST(req: NextRequest) {
 
     // 1. Batch generate drafts for leads
     if (action === 'generate') {
-      const { leadIds, niche, customInstruction } = body;
+      const { leadIds, niche, customInstruction, forceAll } = body;
       const { leads } = await getLeads();
+      const existingDrafts = await getDrafts();
+      const draftedLeadIds = new Set(existingDrafts.map((d) => d.leadId));
 
       let targetLeads = leads;
       if (leadIds && Array.isArray(leadIds) && leadIds.length > 0) {
         targetLeads = leads.filter((l) => leadIds.includes(l.id));
+      } else if (forceAll) {
+        targetLeads = leads.filter((l) => l.status !== 'unsubscribed');
       } else {
-        // Default to all 'new' leads
-        targetLeads = leads.filter((l) => l.status === 'new');
+        // Priority: Leads with status 'new' OR leads that don't have an active draft yet
+        const unDrafted = leads.filter(
+          (l) => (l.status === 'new' || !draftedLeadIds.has(l.id)) && l.status !== 'unsubscribed'
+        );
+        targetLeads = unDrafted.length > 0 ? unDrafted : leads.filter((l) => l.status !== 'unsubscribed');
       }
 
       if (niche && niche !== 'all') {
@@ -58,7 +65,7 @@ export async function POST(req: NextRequest) {
       if (targetLeads.length === 0) {
         return NextResponse.json({
           success: true,
-          message: 'No leads eligible for draft generation.',
+          message: 'No eligible leads found for draft generation.',
           generated: 0,
           drafts: [],
         });
