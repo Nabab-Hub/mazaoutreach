@@ -115,6 +115,23 @@ export function Sidebar() {
             Approval-first active. All initial emails & replies await manual verification.
           </p>
         </div>
+
+        {/* Legal Links */}
+        <div className="flex items-center justify-between text-[11px] text-slate-500 pt-3 px-1">
+          <Link
+            href="/privacy"
+            className="hover:text-indigo-400 transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link
+            href="/terms"
+            className="hover:text-indigo-400 transition-colors"
+          >
+            Terms of Service
+          </Link>
+        </div>
       </div>
     </aside>
   );
