@@ -266,29 +266,67 @@ export async function rejectDraft(draftId: string, reason?: string): Promise<Dra
 }
 
 export async function regenerateDraft(draftId: string, customInstruction: string): Promise<Draft> {
-  const draft = await getDraftById(draftId);
+  const db = getAdminDb();
+  let draft = await getDraftById(draftId);
+
+  // If not found in cache, check Firestore directly
+  if (!draft && db) {
+    try {
+      const docSnap = await db.collection('drafts').doc(draftId).get();
+      if (docSnap.exists) {
+        draft = { id: docSnap.id, ...docSnap.data() } as Draft;
+      }
+    } catch (err) {
+      console.warn('[Drafts] Direct draft fetch failed:', err);
+    }
+  }
+
   if (!draft) {
     throw new Error(`Draft with ID ${draftId} not found`);
   }
 
-  if (!draft.lead) {
-    throw new Error(`Associated lead for draft ${draftId} could not be resolved`);
+  let lead = draft.lead;
+  if (!lead && db && draft.leadId) {
+    try {
+      const leadDoc = await db.collection('leads').doc(draft.leadId).get();
+      if (leadDoc.exists) {
+        lead = { id: leadDoc.id, ...leadDoc.data() } as Lead;
+      }
+    } catch (err) {
+      console.warn('[Drafts] Direct lead fetch failed:', err);
+    }
+  }
+
+  if (!lead) {
+    lead = {
+      id: draft.leadId || 'lead-fallback',
+      name: 'Business Owner',
+      businessName: draft.subject.replace(/^(Re:\s*|Quick question regarding\s*)/i, '').trim() || 'Client Business',
+      email: 'client@example.com',
+      niche: 'other',
+      status: 'new',
+      followUpCount: 0,
+      createdAt: new Date().toISOString(),
+    };
   }
 
   // Fetch few-shot learning examples for this niche
-  const examples = await getLearningExamples(draft.lead.niche);
+  const examples = await getLearningExamples(lead.niche);
 
   // Generate new draft with custom instruction
   const res = await generatePersonalizedDraft({
-    lead: draft.lead,
+    lead,
     fewShotExamples: examples,
     customInstruction,
   });
 
   const updated: Draft = {
     ...draft,
+    lead,
     subject: res.subject,
     body: res.body,
+    editedSubject: undefined,
+    editedBody: undefined,
     confidence: res.confidence,
     reasoning: res.reasoning,
     wordCount: res.wordCount,
@@ -299,12 +337,13 @@ export async function regenerateDraft(draftId: string, customInstruction: string
     updatedAt: new Date().toISOString(),
   };
 
-  const db = getAdminDb();
-  if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+  if (db) {
     try {
       await db.collection('drafts').doc(draftId).update({
         subject: updated.subject,
         body: updated.body,
+        editedSubject: null,
+        editedBody: null,
         confidence: updated.confidence,
         reasoning: updated.reasoning,
         wordCount: updated.wordCount,

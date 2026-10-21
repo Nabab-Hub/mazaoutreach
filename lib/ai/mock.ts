@@ -125,7 +125,14 @@ export class MockAIProvider implements AIProvider {
       let subject = `Quick question regarding ${business}`;
       let specificIdea = `streamline your client onboarding and automate daily operational workflows`;
 
-      if (niche.includes('real_estate') || niche.includes('estate') || niche.includes('property')) {
+      // Check for user revision instruction
+      const revisionMatch = opts.prompt.match(/REVISION[^\n\r]*:\s*([\s\S]+?)(?:###|\nPlease|$)/i);
+      const customInstruction = revisionMatch ? revisionMatch[1].replace(/["']/g, '').trim() : '';
+
+      if (customInstruction) {
+        subject = `Updated: ${customInstruction.slice(0, 45)} - ${business}`;
+        specificIdea = `${customInstruction}`;
+      } else if (niche.includes('real_estate') || niche.includes('estate') || niche.includes('property')) {
         subject = `Idea for ${business}: Automated property inquiry follow-ups`;
         specificIdea = `implement an instant WhatsApp inquiry responder and interactive property portfolio viewer for prospective buyers`;
       } else if (niche.includes('health') || niche.includes('clinic')) {

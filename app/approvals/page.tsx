@@ -189,11 +189,12 @@ export default function ApprovalsPage() {
         }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.draft) {
         showToast('success', 'Draft regenerated with your instructions!');
         setRegeneratingDraftId(null);
         setInstruction('');
-        fetchDrafts();
+        setDrafts((prev) => prev.map((d) => (d.id === data.draft.id ? data.draft : d)));
+        await fetchDrafts();
       } else {
         showToast('error', data.error || 'Regeneration failed');
       }

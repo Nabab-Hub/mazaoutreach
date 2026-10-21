@@ -15,12 +15,12 @@ class AIRouter {
 
   private config: AIRouterConfig = {
     tasks: {
-      personalize: { provider: 'gemini', model: 'gemini-3.7-flash' },
-      classify: { provider: 'gemini', model: 'gemini-3.7-flash' },
+      personalize: { provider: 'gemini', model: 'gemini-3.5-flash' },
+      classify: { provider: 'gemini', model: 'gemini-3.5-flash' },
       reply: { provider: 'openai', model: 'gpt-4o-mini' },
-      niche_inference: { provider: 'gemini', model: 'gemini-3.7-flash' },
+      niche_inference: { provider: 'gemini', model: 'gemini-3.5-flash' },
     },
-    fallbacks: ['gemini', 'openai', 'grok'],
+    fallbacks: ['grok', 'gemini', 'openai'],
     temperature: 0.7,
   };
 
@@ -86,7 +86,12 @@ class AIRouter {
     for (const providerKey of chain) {
       try {
         const provider = this.providers[providerKey];
-        const modelToUse = providerKey === preferredProvider ? preferredModel : (providerKey === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+        let modelToUse = preferredModel;
+        if (providerKey !== preferredProvider) {
+          if (providerKey === 'gemini') modelToUse = 'gemini-3.5-flash';
+          else if (providerKey === 'grok') modelToUse = 'qwen/qwen3.8-27b';
+          else if (providerKey === 'openai') modelToUse = 'gpt-4o-mini';
+        }
         
         const result = await provider.generate({
           ...opts,

@@ -15,9 +15,14 @@ export class GrokProvider implements AIProvider {
       throw new Error('GROK_API_KEY or XAI_API_KEY is not configured in environment');
     }
 
-    const model = opts.model || this.defaultModel;
+    let model = opts.model || this.defaultModel;
     // Auto-detect whether key is Groq (starts with gsk_) or standard xAI
     const isGroq = apiKey.startsWith('gsk_') || model.toLowerCase().includes('qwen') || !!process.env.GROQ_API_KEY;
+    if (isGroq) {
+      if (!model || model === 'grok-beta' || model.startsWith('gpt-') || model.startsWith('gemini-')) {
+        model = 'qwen/qwen3.8-27b';
+      }
+    }
     const url = process.env.GROK_BASE_URL || (isGroq ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://api.x.ai/v1/chat/completions');
 
     const messages = [];

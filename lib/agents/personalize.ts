@@ -71,9 +71,10 @@ ${ex.approvedBody}
   }
 
   if (customInstruction && customInstruction.trim().length > 0) {
-    userPrompt += `\n### REVISION / USER REGENERATION INSTRUCTION:
-${customInstruction.trim()}
-Please adapt the draft to strictly satisfy this user instruction while preserving the core rules.
+    userPrompt += `\n### CRITICAL REVISION & REGENERATION INSTRUCTION (HIGHEST PRIORITY):
+The user requested the following specific custom instruction:
+"${customInstruction.trim()}"
+You MUST rewrite both the subject line and the email body to explicitly satisfy and reflect this instruction, altering the pitch angle, tone, or highlighted service accordingly.
 `;
   }
 
