@@ -14,6 +14,9 @@ export type LeadNiche =
   | 'creator'
   | 'shop'
   | 'clinic'
+  | 'real_estate'
+  | 'saas'
+  | 'agency'
   | 'other';
 
 export interface Lead {
@@ -60,16 +63,6 @@ export interface SuppressionEntry {
   addedAt: string;
   leadId?: string;
 }
-
-export type LeadNiche =
-  | 'club'
-  | 'creator'
-  | 'shop'
-  | 'clinic'
-  | 'real_estate'
-  | 'saas'
-  | 'agency'
-  | 'other';
 
 export interface EmailAccount {
   id: string;
@@ -139,7 +132,7 @@ export interface Draft {
 export interface LearningExample {
   id: string;
   niche: LeadNiche;
-  type: 'initial' | 'followup' | 'reply';
+  type: 'initial' | 'followup' | 'followup_1' | 'followup_2' | 'reply';
   leadName?: string;
   businessName?: string;
   originalSubject: string;

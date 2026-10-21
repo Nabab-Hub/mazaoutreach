@@ -18,7 +18,15 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: any;
+  highlight?: boolean;
+  badge?: string;
+}
+
+const navItems: NavItem[] = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/import', label: 'Import CSV', icon: UploadCloud, highlight: true },
   { href: '/leads', label: 'All Leads', icon: Users },

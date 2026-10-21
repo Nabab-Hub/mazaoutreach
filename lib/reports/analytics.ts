@@ -64,6 +64,9 @@ const NICHE_LABELS: Record<LeadNiche, string> = {
   creator: 'Content Creators',
   shop: 'Retail & Boutiques',
   clinic: 'Dental & Clinics',
+  real_estate: 'Real Estate & Properties',
+  saas: 'SaaS & Digital Products',
+  agency: 'Agencies & Consultancies',
   other: 'Tech & Other B2B',
 };
 

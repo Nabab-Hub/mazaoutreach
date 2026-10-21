@@ -100,7 +100,7 @@ Reply STOP to unsubscribe.`;
 
   const draft = await createDraft({
     leadId: lead.id,
-    type: 'followup',
+    type: followUpNumber === 1 ? 'followup_1' : 'followup_2',
     subject,
     body,
     aiProvider: 'gemini',
