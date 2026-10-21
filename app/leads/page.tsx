@@ -63,6 +63,7 @@ export default function LeadsPage() {
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [actionLeadId, setActionLeadId] = useState<string | null>(null);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -143,6 +144,7 @@ export default function LeadsPage() {
   };
 
   const handleStatusChange = async (id: string, newStatus: LeadStatus) => {
+    setActionLeadId(id);
     try {
       const res = await fetch('/api/leads', {
         method: 'PATCH',
@@ -159,10 +161,13 @@ export default function LeadsPage() {
       }
     } catch (err) {
       console.error('Error updating status:', err);
+    } finally {
+      setActionLeadId(null);
     }
   };
 
   const handleDeleteLead = async (id: string) => {
+    setActionLeadId(id);
     try {
       const res = await fetch(`/api/leads?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -175,6 +180,8 @@ export default function LeadsPage() {
       }
     } catch (err) {
       console.error('Error deleting lead:', err);
+    } finally {
+      setActionLeadId(null);
     }
   };
 
@@ -258,13 +265,16 @@ export default function LeadsPage() {
             <button
               key={tab.value}
               onClick={() => setStatusFilter(tab.value)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
                 statusFilter === tab.value
                   ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 font-semibold shadow-sm'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {statusFilter === tab.value && loading && (
+                <RefreshCw className="w-3 h-3 animate-spin text-indigo-300" />
+              )}
             </button>
           ))}
         </div>
@@ -502,7 +512,11 @@ export default function LeadsPage() {
                             lead.status
                           )}`}
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                          {actionLeadId === lead.id ? (
+                            <RefreshCw className="w-2.5 h-2.5 animate-spin text-current" />
+                          ) : (
+                            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                          )}
                           <span className="capitalize">{lead.status}</span>
                         </span>
                       </td>
@@ -527,7 +541,11 @@ export default function LeadsPage() {
                           className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-slate-800 transition-colors"
                           title="View Lead Details"
                         >
-                          <ChevronRight className="w-4 h-4" />
+                          {actionLeadId === lead.id ? (
+                            <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
                         </button>
                       </td>
                     </tr>

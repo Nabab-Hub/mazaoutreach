@@ -15,6 +15,7 @@ import {
   Layers,
   ChevronRight,
   TrendingUp,
+  RefreshCw,
 } from 'lucide-react';
 import { Lead } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
@@ -95,7 +96,11 @@ export default function OverviewPage() {
               <Users className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-white mt-3">{totalLeads}</p>
+          {loading ? (
+            <RefreshCw className="w-5 h-5 animate-spin text-slate-500 mt-4 mb-2" />
+          ) : (
+            <p className="text-3xl font-extrabold text-white mt-3">{totalLeads}</p>
+          )}
           <p className="text-[11px] text-slate-500 mt-1">Stored securely in Firestore</p>
         </div>
 
@@ -110,7 +115,11 @@ export default function OverviewPage() {
               <CheckSquare className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-indigo-200 mt-3">{pendingDraftsCount}</p>
+          {loading ? (
+            <RefreshCw className="w-5 h-5 animate-spin text-indigo-400 mt-4 mb-2" />
+          ) : (
+            <p className="text-3xl font-extrabold text-indigo-200 mt-3">{pendingDraftsCount}</p>
+          )}
           <p className="text-[11px] text-indigo-400/80 mt-1">Review & 1-click approve</p>
         </Link>
 
@@ -122,7 +131,11 @@ export default function OverviewPage() {
               <Mail className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-purple-300 mt-3">{contactedLeads}</p>
+          {loading ? (
+            <RefreshCw className="w-5 h-5 animate-spin text-purple-400 mt-4 mb-2" />
+          ) : (
+            <p className="text-3xl font-extrabold text-purple-300 mt-3">{contactedLeads}</p>
+          )}
           <p className="text-[11px] text-slate-500 mt-1">Via rotated Gmail accounts</p>
         </div>
 
@@ -134,7 +147,11 @@ export default function OverviewPage() {
               <Flame className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-extrabold text-emerald-300 mt-3">{interestedLeads}</p>
+          {loading ? (
+            <RefreshCw className="w-5 h-5 animate-spin text-emerald-400 mt-4 mb-2" />
+          ) : (
+            <p className="text-3xl font-extrabold text-emerald-300 mt-3">{interestedLeads}</p>
+          )}
           <p className="text-[11px] text-emerald-500 mt-1">Instant Telegram alerts triggered</p>
         </div>
       </div>
@@ -234,40 +251,51 @@ export default function OverviewPage() {
         </div>
 
         <div className="divide-y divide-slate-800/60">
-          {leads.slice(0, 5).map((lead) => (
-            <div
-              key={lead.id}
-              onClick={() => setSelectedLead(lead)}
-              className="p-4 hover:bg-slate-900/50 flex items-center justify-between cursor-pointer transition-colors"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-semibold text-sm text-white">{lead.businessName}</span>
-                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                    {lead.niche}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-400 flex items-center gap-2">
-                  <span>{lead.name}</span>
-                  <span>•</span>
-                  <span className="font-mono text-slate-300">{lead.email}</span>
-                  {lead.city && (
-                    <>
-                      <span>•</span>
-                      <span>{lead.city}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-xs px-2.5 py-1 rounded-lg border bg-slate-800/80 text-slate-300 border-slate-700 capitalize">
-                  {lead.status}
-                </span>
-                <ChevronRight className="w-4 h-4 text-slate-500" />
-              </div>
+          {loading ? (
+            <div className="p-8 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
+              <RefreshCw className="w-5 h-5 animate-spin text-indigo-400" />
+              <span>Loading recent leads...</span>
             </div>
-          ))}
+          ) : leads.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-500">
+              No leads added yet. Import your first CSV to get started.
+            </div>
+          ) : (
+            leads.slice(0, 5).map((lead) => (
+              <div
+                key={lead.id}
+                onClick={() => setSelectedLead(lead)}
+                className="p-4 hover:bg-slate-900/50 flex items-center justify-between cursor-pointer transition-colors"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-semibold text-sm text-white">{lead.businessName}</span>
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                      {lead.niche}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-400 flex items-center gap-2">
+                    <span>{lead.name}</span>
+                    <span>•</span>
+                    <span className="font-mono text-slate-300">{lead.email}</span>
+                    {lead.city && (
+                      <>
+                        <span>•</span>
+                        <span>{lead.city}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs px-2.5 py-1 rounded-lg border bg-slate-800/80 text-slate-300 border-slate-700 capitalize">
+                    {lead.status}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-slate-500" />
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

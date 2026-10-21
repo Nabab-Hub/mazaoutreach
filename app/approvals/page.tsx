@@ -41,6 +41,12 @@ export default function ApprovalsPage() {
   const [editSubject, setEditSubject] = useState('');
   const [editBody, setEditBody] = useState('');
 
+  // Action loading states
+  const [actionDraftId, setActionDraftId] = useState<string | null>(null);
+  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null);
+  const [isBulkApproving, setIsBulkApproving] = useState(false);
+  const [batchMode, setBatchMode] = useState<'new' | 'all' | null>(null);
+
   // Regenerate modal state
   const [regeneratingDraftId, setRegeneratingDraftId] = useState<string | null>(null);
   const [instruction, setInstruction] = useState('');
@@ -86,6 +92,7 @@ export default function ApprovalsPage() {
   // Generate drafts for new leads
   const handleBatchGenerate = async (forceAll: boolean = false) => {
     setGenerating(true);
+    setBatchMode(forceAll ? 'all' : 'new');
     try {
       const res = await fetch('/api/drafts', {
         method: 'POST',
@@ -107,11 +114,14 @@ export default function ApprovalsPage() {
       showToast('error', err.message || 'Generation request failed');
     } finally {
       setGenerating(false);
+      setBatchMode(null);
     }
   };
 
   // Approve a single draft
   const handleApprove = async (draftId: string, subject?: string, body?: string) => {
+    setActionDraftId(draftId);
+    setActionType('approve');
     try {
       const res = await fetch('/api/drafts', {
         method: 'POST',
@@ -133,11 +143,16 @@ export default function ApprovalsPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Approval failed');
+    } finally {
+      setActionDraftId(null);
+      setActionType(null);
     }
   };
 
   // Reject a single draft
   const handleReject = async (draftId: string) => {
+    setActionDraftId(draftId);
+    setActionType('reject');
     try {
       const res = await fetch('/api/drafts', {
         method: 'POST',
@@ -153,6 +168,9 @@ export default function ApprovalsPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Rejection failed');
+    } finally {
+      setActionDraftId(null);
+      setActionType(null);
     }
   };
 
@@ -189,6 +207,7 @@ export default function ApprovalsPage() {
   // Bulk approve
   const handleBulkApprove = async () => {
     if (selectedDraftIds.length === 0) return;
+    setIsBulkApproving(true);
     try {
       const res = await fetch('/api/drafts', {
         method: 'POST',
@@ -208,6 +227,8 @@ export default function ApprovalsPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Bulk approval request failed');
+    } finally {
+      setIsBulkApproving(false);
     }
   };
 
@@ -278,21 +299,24 @@ export default function ApprovalsPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
             title="Generate AI drafts for newly added leads"
           >
-            {generating ? (
+            {generating && batchMode === 'new' ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
               <Bot className="w-4 h-4" />
             )}
-            <span>{generating ? 'Drafting Leads...' : 'Generate Drafts for New Leads'}</span>
+            <span>{generating && batchMode === 'new' ? 'Drafting Leads...' : 'Generate Drafts for New Leads'}</span>
           </button>
 
           <button
             onClick={() => handleBatchGenerate(true)}
             disabled={generating}
-            className="px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all disabled:opacity-50"
             title="Generate fresh personalized drafts for all leads in the database"
           >
-            Draft for All Leads
+            {generating && batchMode === 'all' && (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            )}
+            <span>{generating && batchMode === 'all' ? 'Drafting All Leads...' : 'Draft for All Leads'}</span>
           </button>
         </div>
       </div>
@@ -305,13 +329,16 @@ export default function ApprovalsPage() {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all flex items-center gap-1.5 ${
                 statusFilter === st
                   ? 'bg-indigo-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              {st} {st === 'pending' && pendingCount > 0 && `(${pendingCount})`}
+              <span>{st} {st === 'pending' && pendingCount > 0 && `(${pendingCount})`}</span>
+              {statusFilter === st && loading && (
+                <RefreshCw className="w-3 h-3 animate-spin text-white" />
+              )}
             </button>
           ))}
         </div>
@@ -352,10 +379,15 @@ export default function ApprovalsPage() {
             <span className="text-xs text-slate-400">{selectedDraftIds.length} selected</span>
             <button
               onClick={handleBulkApprove}
-              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+              disabled={isBulkApproving}
+              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all disabled:opacity-50"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Bulk Approve Selected</span>
+              {isBulkApproving ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              )}
+              <span>{isBulkApproving ? 'Approving Selected...' : 'Bulk Approve Selected'}</span>
             </button>
           </div>
         )}
@@ -525,16 +557,26 @@ export default function ApprovalsPage() {
                       <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                         <button
                           onClick={() => setEditingDraftId(null)}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white"
+                          disabled={actionDraftId === draft.id}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white disabled:opacity-50"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={() => handleApprove(draft.id, editSubject, editBody)}
-                          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-sm"
+                          disabled={actionDraftId === draft.id}
+                          className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
                         >
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Save & Approve</span>
+                          {actionDraftId === draft.id && actionType === 'approve' ? (
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {actionDraftId === draft.id && actionType === 'approve'
+                              ? 'Saving & Approving...'
+                              : 'Save & Approve'}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -566,7 +608,8 @@ export default function ApprovalsPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => startEditing(draft)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-700/80 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                        disabled={actionDraftId === draft.id}
+                        className="px-3 py-1.5 rounded-lg border border-slate-700/80 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
                       >
                         <Edit3 className="w-3.5 h-3.5 text-slate-400" />
                         <span>Edit</span>
@@ -577,7 +620,8 @@ export default function ApprovalsPage() {
                           setRegeneratingDraftId(draft.id);
                           setInstruction('');
                         }}
-                        className="px-3 py-1.5 rounded-lg border border-slate-700/80 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                        disabled={actionDraftId === draft.id}
+                        className="px-3 py-1.5 rounded-lg border border-slate-700/80 hover:bg-slate-800 text-slate-300 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
                       >
                         <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
                         <span>Regenerate</span>
@@ -585,19 +629,37 @@ export default function ApprovalsPage() {
 
                       <button
                         onClick={() => handleReject(draft.id)}
-                        className="px-3 py-1.5 rounded-lg border border-rose-900/40 hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                        disabled={actionDraftId === draft.id}
+                        className="px-3 py-1.5 rounded-lg border border-rose-900/40 hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
                       >
-                        <XCircle className="w-3.5 h-3.5 text-rose-400" />
-                        <span>Reject</span>
+                        {actionDraftId === draft.id && actionType === 'reject' ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-400" />
+                        ) : (
+                          <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                        )}
+                        <span>
+                          {actionDraftId === draft.id && actionType === 'reject'
+                            ? 'Rejecting...'
+                            : 'Reject'}
+                        </span>
                       </button>
                     </div>
 
                     <button
                       onClick={() => handleApprove(draft.id)}
-                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all"
+                      disabled={actionDraftId === draft.id}
+                      className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all disabled:opacity-50"
                     >
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Approve & Send</span>
+                      {actionDraftId === draft.id && actionType === 'approve' ? (
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      <span>
+                        {actionDraftId === draft.id && actionType === 'approve'
+                          ? 'Approving...'
+                          : 'Approve & Send'}
+                      </span>
                     </button>
                   </div>
                 )}

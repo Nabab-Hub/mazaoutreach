@@ -13,6 +13,7 @@ import {
   HelpCircle,
   ShieldAlert,
   Layers,
+  RefreshCw,
 } from 'lucide-react';
 import { NicheTemplate, LeadNiche } from '@/lib/types';
 
@@ -22,6 +23,7 @@ export default function TemplatesPage() {
   const [activeTemplate, setActiveTemplate] = useState<NicheTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // New item inputs
@@ -98,6 +100,7 @@ export default function TemplatesPage() {
 
   const handleResetDefaults = async () => {
     if (!confirm('Reset all templates to default pitch angles and banned phrases?')) return;
+    setResetting(true);
     try {
       const res = await fetch('/api/templates', {
         method: 'POST',
@@ -113,6 +116,8 @@ export default function TemplatesPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Reset failed');
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -189,17 +194,26 @@ export default function TemplatesPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={handleResetDefaults}
-            className="px-3.5 py-2 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-colors"
+            disabled={resetting || saving}
+            className="px-3.5 py-2 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Defaults</span>
+            {resetting ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            ) : (
+              <RotateCcw className="w-3.5 h-3.5" />
+            )}
+            <span>{resetting ? 'Resetting...' : 'Reset Defaults'}</span>
           </button>
           <button
             onClick={handleSave}
-            disabled={saving || !activeTemplate}
+            disabled={saving || resetting || !activeTemplate}
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-md shadow-indigo-600/20 transition-all disabled:opacity-50"
           >
-            <Save className="w-3.5 h-3.5" />
+            {saving ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Save className="w-3.5 h-3.5" />
+            )}
             <span>{saving ? 'Saving...' : 'Save Pitch Angle'}</span>
           </button>
         </div>
@@ -214,20 +228,27 @@ export default function TemplatesPage() {
               Industry Verticals ({templates.length})
             </span>
             <div className="space-y-1">
-              {templates.map((tpl) => (
-                <button
-                  key={tpl.niche}
-                  onClick={() => handleSelectNiche(tpl.niche)}
-                  className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-between ${
-                    selectedNiche === tpl.niche
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                  }`}
-                >
-                  <span className="truncate">{tpl.displayName}</span>
-                  <span className="text-[10px] opacity-60 font-mono uppercase">{tpl.niche}</span>
-                </button>
-              ))}
+              {loading ? (
+                <div className="p-6 text-center text-xs text-slate-500 space-y-2">
+                  <RefreshCw className="w-4 h-4 animate-spin mx-auto text-indigo-400" />
+                  <span>Loading verticals...</span>
+                </div>
+              ) : (
+                templates.map((tpl) => (
+                  <button
+                    key={tpl.niche}
+                    onClick={() => handleSelectNiche(tpl.niche)}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center justify-between ${
+                      selectedNiche === tpl.niche
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <span className="truncate">{tpl.displayName}</span>
+                    <span className="text-[10px] opacity-60 font-mono uppercase">{tpl.niche}</span>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>

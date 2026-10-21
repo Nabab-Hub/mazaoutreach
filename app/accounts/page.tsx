@@ -43,6 +43,8 @@ export default function AccountsPage() {
 
   // Notification toast
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [actionAccountId, setActionAccountId] = useState<string | null>(null);
+  const [savingLimits, setSavingLimits] = useState(false);
 
   const fetchAccountsAndSent = async () => {
     setLoading(true);
@@ -78,6 +80,7 @@ export default function AccountsPage() {
   };
 
   const handleToggleStatus = async (account: EmailAccount) => {
+    setActionAccountId(account.id);
     const nextStatus = account.status === 'active' ? 'paused' : 'active';
     try {
       const res = await fetch('/api/accounts', {
@@ -97,11 +100,14 @@ export default function AccountsPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Status toggle failed');
+    } finally {
+      setActionAccountId(null);
     }
   };
 
   const handleDeleteAccount = async (id: string, email: string) => {
     if (!confirm(`Are you sure you want to disconnect ${email}?`)) return;
+    setActionAccountId(id);
     try {
       const res = await fetch(`/api/accounts?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -113,11 +119,14 @@ export default function AccountsPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Delete failed');
+    } finally {
+      setActionAccountId(null);
     }
   };
 
   const handleSaveLimits = async () => {
     if (!editingLimitAccount) return;
+    setSavingLimits(true);
     try {
       const res = await fetch('/api/accounts', {
         method: 'PATCH',
@@ -140,6 +149,8 @@ export default function AccountsPage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Limit update failed');
+    } finally {
+      setSavingLimits(false);
     }
   };
 
@@ -355,14 +366,17 @@ export default function AccountsPage() {
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleToggleStatus(acct)}
+                        disabled={actionAccountId === acct.id}
                         title={acct.status === 'active' ? 'Pause account' : 'Resume account'}
-                        className={`p-2 rounded-xl border text-xs font-medium transition-all ${
+                        className={`p-2 rounded-xl border text-xs font-medium transition-all disabled:opacity-50 ${
                           acct.status === 'active'
                             ? 'bg-slate-900 border-slate-700 text-slate-300 hover:text-amber-400'
                             : 'bg-emerald-950/60 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/60'
                         }`}
                       >
-                        {acct.status === 'active' ? (
+                        {actionAccountId === acct.id ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        ) : acct.status === 'active' ? (
                           <Pause className="w-3.5 h-3.5" />
                         ) : (
                           <Play className="w-3.5 h-3.5" />
@@ -371,10 +385,15 @@ export default function AccountsPage() {
 
                       <button
                         onClick={() => handleDeleteAccount(acct.id, acct.gmailAddress)}
+                        disabled={actionAccountId === acct.id}
                         title="Disconnect Account"
-                        className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-rose-400 hover:border-rose-800/60 transition-all"
+                        className="p-2 rounded-xl border border-slate-800 bg-slate-900 text-slate-400 hover:text-rose-400 hover:border-rose-800/60 transition-all disabled:opacity-50"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        {actionAccountId === acct.id ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-400" />
+                        ) : (
+                          <Trash2 className="w-3.5 h-3.5" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -551,9 +570,13 @@ export default function AccountsPage() {
               </button>
               <button
                 onClick={handleSaveLimits}
-                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-md shadow-indigo-600/20"
+                disabled={savingLimits}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-md shadow-indigo-600/20 disabled:opacity-50 transition-all"
               >
-                Save Limits
+                {savingLimits ? (
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                ) : null}
+                <span>{savingLimits ? 'Saving...' : 'Save Limits'}</span>
               </button>
             </div>
           </div>

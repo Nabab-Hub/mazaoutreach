@@ -39,6 +39,7 @@ export default function PipelinePage() {
   const [loading, setLoading] = useState(true);
   const [polling, setPolling] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [actionLeadId, setActionLeadId] = useState<string | null>(null);
 
   // Simulate reply modal
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
@@ -75,6 +76,7 @@ export default function PipelinePage() {
   };
 
   const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
+    setActionLeadId(leadId);
     try {
       const res = await fetch('/api/leads', {
         method: 'PATCH',
@@ -93,10 +95,13 @@ export default function PipelinePage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Status update failed');
+    } finally {
+      setActionLeadId(null);
     }
   };
 
   const handleDeleteLead = async (leadId: string) => {
+    setActionLeadId(leadId);
     try {
       const res = await fetch(`/api/leads?id=${leadId}`, { method: 'DELETE' });
       const data = await res.json();
@@ -107,6 +112,8 @@ export default function PipelinePage() {
       }
     } catch (err: any) {
       showToast('error', err.message || 'Delete failed');
+    } finally {
+      setActionLeadId(null);
     }
   };
 
@@ -206,7 +213,8 @@ export default function PipelinePage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
             <GitPullRequest className="w-6 h-6 text-indigo-400" />
-            Interested Leads Pipeline
+            <span>Interested Leads Pipeline</span>
+            {loading && <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />}
           </h1>
           <p className="text-sm text-slate-400 mt-0.5">
             Track leads across outreach stages: from initial contact to classified replies, booked discovery calls, and closed deals.
@@ -256,7 +264,12 @@ export default function PipelinePage() {
 
               {/* Cards in Column */}
               <div className="space-y-3 flex-1 overflow-y-auto">
-                {stageLeads.length === 0 ? (
+                {loading ? (
+                  <div className="h-32 flex flex-col items-center justify-center text-[11px] text-slate-500 text-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
+                    <span>Loading...</span>
+                  </div>
+                ) : stageLeads.length === 0 ? (
                   <div className="h-32 flex items-center justify-center text-[11px] text-slate-500 text-center italic">
                     No leads in this stage
                   </div>
@@ -297,9 +310,13 @@ export default function PipelinePage() {
                               e.stopPropagation();
                               handleStatusChange(lead.id, 'replied');
                             }}
-                            className="text-cyan-400 hover:underline font-semibold"
+                            disabled={actionLeadId === lead.id}
+                            className="text-cyan-400 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
                           >
-                            Mark Replied →
+                            {actionLeadId === lead.id && (
+                              <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                            )}
+                            <span>{actionLeadId === lead.id ? 'Moving...' : 'Mark Replied →'}</span>
                           </button>
                         )}
                         {stage.key === 'replied' && (
@@ -308,9 +325,13 @@ export default function PipelinePage() {
                               e.stopPropagation();
                               handleStatusChange(lead.id, 'interested');
                             }}
-                            className="text-emerald-400 hover:underline font-semibold"
+                            disabled={actionLeadId === lead.id}
+                            className="text-emerald-400 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
                           >
-                            Mark Hot 🔥 →
+                            {actionLeadId === lead.id && (
+                              <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                            )}
+                            <span>{actionLeadId === lead.id ? 'Moving...' : 'Mark Hot 🔥 →'}</span>
                           </button>
                         )}
                         {stage.key === 'interested' && (
@@ -319,9 +340,13 @@ export default function PipelinePage() {
                               e.stopPropagation();
                               handleStatusChange(lead.id, 'meeting');
                             }}
-                            className="text-amber-400 hover:underline font-semibold"
+                            disabled={actionLeadId === lead.id}
+                            className="text-amber-400 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
                           >
-                            Book Call 📅 →
+                            {actionLeadId === lead.id && (
+                              <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                            )}
+                            <span>{actionLeadId === lead.id ? 'Moving...' : 'Book Call 📅 →'}</span>
                           </button>
                         )}
                         {stage.key === 'meeting' && (
@@ -330,9 +355,13 @@ export default function PipelinePage() {
                               e.stopPropagation();
                               handleStatusChange(lead.id, 'won');
                             }}
-                            className="text-green-400 hover:underline font-semibold"
+                            disabled={actionLeadId === lead.id}
+                            className="text-green-400 hover:underline font-semibold flex items-center gap-1 disabled:opacity-50"
                           >
-                            Mark Won 🎉 →
+                            {actionLeadId === lead.id && (
+                              <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                            )}
+                            <span>{actionLeadId === lead.id ? 'Moving...' : 'Mark Won 🎉 →'}</span>
                           </button>
                         )}
                       </div>

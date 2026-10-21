@@ -15,6 +15,7 @@ import {
   Trash2,
   ExternalLink,
   CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface LeadDrawerProps {
@@ -38,21 +39,33 @@ const statusOptions: { value: LeadStatus; label: string; color: string }[] = [
 
 export function LeadDrawer({ lead, onClose, onStatusChange, onDelete }: LeadDrawerProps) {
   const [updating, setUpdating] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState<LeadStatus | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   if (!lead) return null;
 
   const handleStatusSelect = async (newStatus: LeadStatus) => {
     setUpdating(true);
-    await onStatusChange(lead.id, newStatus);
-    setUpdating(false);
+    setUpdatingStatus(newStatus);
+    try {
+      await onStatusChange(lead.id, newStatus);
+    } finally {
+      setUpdating(false);
+      setUpdatingStatus(null);
+    }
   };
 
   const handleDelete = async () => {
     setUpdating(true);
-    await onDelete(lead.id);
-    setUpdating(false);
-    onClose();
+    setDeleting(true);
+    try {
+      await onDelete(lead.id);
+      onClose();
+    } finally {
+      setUpdating(false);
+      setDeleting(false);
+    }
   };
 
   return (
@@ -100,10 +113,17 @@ export function LeadDrawer({ lead, onClose, onStatusChange, onDelete }: LeadDraw
                   lead.status === opt.value
                     ? `${opt.color} font-bold ring-2 ring-indigo-500/50 shadow-md`
                     : 'bg-slate-800/40 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
+                } disabled:opacity-60`}
               >
-                <span>{opt.label}</span>
-                {lead.status === opt.value && <CheckCircle className="w-3.5 h-3.5" />}
+                <span className="flex items-center gap-1.5">
+                  {updatingStatus === opt.value && (
+                    <RefreshCw className="w-3 h-3 animate-spin text-indigo-400" />
+                  )}
+                  <span>{opt.label}</span>
+                </span>
+                {lead.status === opt.value && updatingStatus !== opt.value && (
+                  <CheckCircle className="w-3.5 h-3.5" />
+                )}
               </button>
             ))}
           </div>
@@ -206,9 +226,16 @@ export function LeadDrawer({ lead, onClose, onStatusChange, onDelete }: LeadDraw
               <button
                 onClick={handleDelete}
                 disabled={updating}
-                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition-all"
+                className="flex-1 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
               >
-                Yes, Delete Lead
+                {deleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Yes, Delete Lead</span>
+                )}
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
