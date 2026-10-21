@@ -10,13 +10,15 @@ export class GrokProvider implements AIProvider {
   }
 
   async generate(opts: AIProviderOptions): Promise<string> {
-    const apiKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY;
+    const apiKey = process.env.GROK_API_KEY || process.env.XAI_API_KEY || process.env.GROQ_API_KEY;
     if (!apiKey) {
       throw new Error('GROK_API_KEY or XAI_API_KEY is not configured in environment');
     }
 
     const model = opts.model || this.defaultModel;
-    const url = 'https://api.x.ai/v1/chat/completions';
+    // Auto-detect whether key is Groq (starts with gsk_) or standard xAI
+    const isGroq = apiKey.startsWith('gsk_') || model.toLowerCase().includes('qwen') || !!process.env.GROQ_API_KEY;
+    const url = process.env.GROK_BASE_URL || (isGroq ? 'https://api.groq.com/openai/v1/chat/completions' : 'https://api.x.ai/v1/chat/completions');
 
     const messages = [];
     if (opts.system) {

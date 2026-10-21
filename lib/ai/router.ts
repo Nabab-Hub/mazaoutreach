@@ -15,10 +15,10 @@ class AIRouter {
 
   private config: AIRouterConfig = {
     tasks: {
-      personalize: { provider: 'gemini', model: 'gemini-1.5-flash' },
-      classify: { provider: 'gemini', model: 'gemini-1.5-flash' },
+      personalize: { provider: 'gemini', model: 'gemini-3.7-flash' },
+      classify: { provider: 'gemini', model: 'gemini-3.7-flash' },
       reply: { provider: 'openai', model: 'gpt-4o-mini' },
-      niche_inference: { provider: 'gemini', model: 'gemini-1.5-flash' },
+      niche_inference: { provider: 'gemini', model: 'gemini-3.7-flash' },
     },
     fallbacks: ['gemini', 'openai', 'grok'],
     temperature: 0.7,

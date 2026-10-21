@@ -277,10 +277,13 @@ export default function SettingsPage() {
                   }
                   className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 font-mono"
                 >
-                  <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Crisp)</option>
+                  <option value="gemini-3.7-flash">gemini-3.7-flash (Latest Ultra-Fast)</option>
+                  <option value="gemini-2.0-flash">gemini-2.0-flash (High Speed)</option>
+                  <option value="gemini-1.5-flash">gemini-1.5-flash (Standard)</option>
                   <option value="gemini-1.5-pro">gemini-1.5-pro (Deep Context)</option>
                   <option value="gpt-4o-mini">gpt-4o-mini (Cost Efficient)</option>
                   <option value="gpt-4o">gpt-4o (High Nuance)</option>
+                  <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b (Qwen via Groq/OpenAI)</option>
                   <option value="grok-beta">grok-beta (Direct Tone)</option>
                 </select>
               </div>
@@ -303,14 +306,14 @@ export default function SettingsPage() {
                     updateTaskConfig(
                       'classify',
                       e.target.value as any,
-                      e.target.value === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini'
+                      e.target.value === 'gemini' ? 'gemini-3.7-flash' : 'gpt-4o-mini'
                     )
                   }
                   className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
                 >
                   <option value="gemini">Gemini</option>
                   <option value="openai">OpenAI</option>
-                  <option value="grok">Grok (xAI)</option>
+                  <option value="grok">Grok (xAI / Groq)</option>
                 </select>
                 <select
                   value={aiConfig.tasks.classify.model}
@@ -319,8 +322,10 @@ export default function SettingsPage() {
                   }
                   className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 font-mono"
                 >
+                  <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                   <option value="gemini-1.5-flash">gemini-1.5-flash</option>
                   <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b</option>
                 </select>
               </div>
             </div>
@@ -342,14 +347,14 @@ export default function SettingsPage() {
                     updateTaskConfig(
                       'reply',
                       e.target.value as any,
-                      e.target.value === 'openai' ? 'gpt-4o-mini' : 'gemini-1.5-flash'
+                      e.target.value === 'openai' ? 'gpt-4o-mini' : 'gemini-3.7-flash'
                     )
                   }
                   className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500 font-medium"
                 >
                   <option value="openai">OpenAI</option>
                   <option value="gemini">Gemini</option>
-                  <option value="grok">Grok (xAI)</option>
+                  <option value="grok">Grok (xAI / Groq)</option>
                 </select>
                 <select
                   value={aiConfig.tasks.reply.model}
@@ -360,7 +365,9 @@ export default function SettingsPage() {
                 >
                   <option value="gpt-4o-mini">gpt-4o-mini</option>
                   <option value="gpt-4o">gpt-4o</option>
+                  <option value="gemini-3.7-flash">gemini-3.7-flash</option>
                   <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                  <option value="qwen/qwen3.8-27b">qwen/qwen3.8-27b</option>
                 </select>
               </div>
             </div>
