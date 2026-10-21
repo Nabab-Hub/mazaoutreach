@@ -29,10 +29,11 @@ export function getGoogleOAuthClientSecret(): string {
 }
 
 export function getGoogleOAuthRedirectUri(): string {
-  return (
-    process.env.GOOGLE_OAUTH_REDIRECT_URI ||
-    'http://localhost:3000/api/gmail/oauth'
-  );
+  if (process.env.GOOGLE_OAUTH_REDIRECT_URI) {
+    return process.env.GOOGLE_OAUTH_REDIRECT_URI;
+  }
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return `${baseUrl.replace(/\/$/, '')}/api/gmail/oauth/callback`;
 }
 
 /**

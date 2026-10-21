@@ -209,13 +209,23 @@ export default function AccountsPage() {
         </div>
 
         {/* Connect Gmail Action */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <a
+            href="/api/gmail/oauth?mock_connect=true"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all"
+            title="Add an active demo outreach inbox instantly without Google Console configuration"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Quick Connect (Demo Inbox)</span>
+          </a>
+
           <a
             href="/api/gmail/oauth"
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-lg shadow-indigo-600/20 transition-all"
+            title="Connect your live Google Workspace or personal Gmail inbox via OAuth2"
           >
             <Plus className="w-4 h-4" />
-            <span>Connect Gmail (OAuth2)</span>
+            <span>Connect Live Gmail</span>
           </a>
         </div>
       </div>
