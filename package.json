@@ -1,0 +1,32 @@
+{
+  "name": "client-handling-agentic-ai",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next dev -p 3000",
+    "build": "node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next build",
+    "start": "node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "firebase": "^10.12.0",
+    "firebase-admin": "^12.1.0",
+    "lucide-react": "^0.383.0",
+    "next": "14.2.24",
+    "papaparse": "^5.4.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/papaparse": "^5.3.14",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.4.5"
+  }
+}

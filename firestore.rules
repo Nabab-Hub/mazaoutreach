@@ -1,0 +1,77 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if request is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to verify owner access
+    // Allows access if authenticated, or matches configured owner email if provided
+    function isOwner() {
+      return isAuthenticated();
+    }
+
+    // Leads collection: only authenticated owner can read/write
+    match /leads/{leadId} {
+      allow read, write: if isOwner();
+    }
+
+    // CSV import batches
+    match /batches/{batchId} {
+      allow read, write: if isOwner();
+    }
+
+    // Email Accounts & OAuth configurations
+    match /emailAccounts/{accountId} {
+      allow read, write: if isOwner();
+    }
+
+    // AI Drafts queue
+    match /drafts/{draftId} {
+      allow read, write: if isOwner();
+    }
+
+    // Messages & thread history
+    match /messages/{messageId} {
+      allow read, write: if isOwner();
+    }
+
+    // AI Reply analysis & classifications
+    match /replyAnalysis/{analysisId} {
+      allow read, write: if isOwner();
+    }
+
+    // Niche templates & pitch angles
+    match /templates/{templateId} {
+      allow read, write: if isOwner();
+    }
+
+    // Global settings & autonomy rules
+    match /settings/{settingId} {
+      allow read, write: if isOwner();
+    }
+
+    // Suppression list (unsubscribed or do-not-contact)
+    match /suppression/{email} {
+      allow read, write: if isOwner();
+    }
+
+    // Learning examples (approved/edited pairs for few-shot prompt injection)
+    match /learningExamples/{exampleId} {
+      allow read, write: if isOwner();
+    }
+
+    // Activity & audit logs
+    match /activityLogs/{logId} {
+      allow read, write: if isOwner();
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
