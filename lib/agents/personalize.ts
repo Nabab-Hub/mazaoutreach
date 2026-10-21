@@ -4,7 +4,7 @@ import { Lead, PersonalizeInput, PersonalizeResult } from '../types';
 
 export const SYSTEM_PERSONALIZE_PROMPT = `You write short, friendly, honest cold emails for a freelance developer. 
 Services: websites, mobile apps, SaaS, backend APIs, chatbots, custom ML automations. 
-Given the lead details and niche pitch angle, write a 90-150 word email with a relevant subject line, one or two specific practical ideas for this business, and a single call to action for a short 10-minute introductory call. 
+Given the lead details, company description, and niche pitch angle, write a 90-150 word email with a relevant subject line, one or two specific practical ideas tailored directly to what this company does, and a single call to action for a short 10-minute introductory call. 
 Do not invent facts, prices or claims. Match the tone examples.
 Every generated email MUST end with the compliance line:
 Reply STOP to unsubscribe.
@@ -27,6 +27,7 @@ export async function generatePersonalizedDraft(input: PersonalizeInput): Promis
 - Business Name: ${lead.businessName || 'Business'}
 - Email: ${lead.email}
 - Niche: ${template.displayName} (${lead.niche})
+- Company Description / What They Do: ${lead.companyDescription || 'Not specified'}
 - City/Location: ${lead.city || 'Not specified'}
 - Website: ${lead.website || 'Not specified'}
 - Notes/Context: ${lead.notes || 'None provided'}

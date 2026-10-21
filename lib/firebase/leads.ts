@@ -6,8 +6,9 @@ const globalForLeads = globalThis as unknown as {
   __mockBatches?: ImportBatch[];
 };
 
-// In-memory demo store initialized with realistic sample leads for immediate evaluation
-let mockLeads: Lead[] = globalForLeads.__mockLeads || [
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+const DEMO_LEADS: Lead[] = [
   {
     id: 'lead-1',
     name: 'Aarav Sharma',
@@ -88,7 +89,7 @@ let mockLeads: Lead[] = globalForLeads.__mockLeads || [
   },
 ];
 
-let mockBatches: ImportBatch[] = [
+const DEMO_BATCHES: ImportBatch[] = [
   {
     id: 'batch-demo-1',
     filename: 'initial_q1_leads_sample.csv',
@@ -99,18 +100,36 @@ let mockBatches: ImportBatch[] = [
     createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
   },
 ];
+
+// In-memory demo store initialized with realistic sample leads ONLY when DEMO_MODE is true
+let mockLeads: Lead[] = isDemoMode ? (globalForLeads.__mockLeads || DEMO_LEADS) : (globalForLeads.__mockLeads || []);
+let mockBatches: ImportBatch[] = isDemoMode ? (globalForLeads.__mockBatches || DEMO_BATCHES) : (globalForLeads.__mockBatches || []);
+
 globalForLeads.__mockLeads = mockLeads;
 globalForLeads.__mockBatches = mockBatches;
 
-let mockSuppression: SuppressionEntry[] = [
-  {
-    email: 'do-not-contact@example.com',
-    reason: 'manual',
-    addedAt: new Date(Date.now() - 3600000 * 24 * 10).toISOString(),
-  },
-];
+let mockSuppression: SuppressionEntry[] = isDemoMode
+  ? [
+      {
+        email: 'do-not-contact@example.com',
+        reason: 'manual',
+        addedAt: new Date(Date.now() - 3600000 * 24 * 10).toISOString(),
+      },
+    ]
+  : [];
+
+function cleanDoc<T extends Record<string, any>>(obj: T): T {
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
 
 export async function getExistingLeadEmails(): Promise<Set<string>> {
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
   const db = getAdminDb();
   if (db) {
     try {
@@ -125,7 +144,7 @@ export async function getExistingLeadEmails(): Promise<Set<string>> {
       console.warn('Error reading leads from Firestore, falling back to mock:', e);
     }
   }
-  return new Set(mockLeads.map((l) => l.email.toLowerCase().trim()));
+  return isDemo ? new Set(mockLeads.map((l) => l.email.toLowerCase().trim())) : new Set();
 }
 
 export async function getSuppressedEmails(): Promise<Set<string>> {
@@ -150,26 +169,22 @@ export async function fetchAllLeads(filters?: {
   batchId?: string;
   search?: string;
 }): Promise<Lead[]> {
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
   const db = getAdminDb();
   let leads: Lead[] = [];
 
   if (db) {
     try {
-      let query: FirebaseFirestore.Query = db.collection('leads');
-      if (filters?.status) query = query.where('status', '==', filters.status);
-      if (filters?.niche) query = query.where('niche', '==', filters.niche);
-      if (filters?.batchId) query = query.where('batchId', '==', filters.batchId);
-
-      const snap = await query.orderBy('createdAt', 'desc').get();
+      const snap = await db.collection('leads').get();
       snap.forEach((doc) => {
         leads.push({ id: doc.id, ...doc.data() } as Lead);
       });
     } catch (e) {
       console.warn('Error querying Firestore leads, falling back to memory store:', e);
-      leads = [...(globalForLeads.__mockLeads || mockLeads)];
+      leads = isDemo ? [...(globalForLeads.__mockLeads || mockLeads)] : [...(globalForLeads.__mockLeads || [])];
     }
   } else {
-    leads = [...(globalForLeads.__mockLeads || mockLeads)];
+    leads = isDemo ? [...(globalForLeads.__mockLeads || mockLeads)] : [...(globalForLeads.__mockLeads || [])];
   }
 
   // Filter in-memory if needed
@@ -201,7 +216,7 @@ export async function fetchAllLeads(filters?: {
 export async function saveImportedBatch(
   batch: Omit<ImportBatch, 'id' | 'createdAt'>,
   newLeads: Array<Omit<Lead, 'id' | 'createdAt' | 'status' | 'followUpCount'>>
-): Promise<{ batchId: string; importedCount: number }> {
+): Promise<{ batchId: string; importedCount: number; createdLeads: Lead[] }> {
   const batchId = `batch-${Date.now()}`;
   const now = new Date().toISOString();
 
@@ -223,18 +238,20 @@ export async function saveImportedBatch(
   const db = getAdminDb();
   if (db) {
     try {
-      const batchOp = db.batch();
-
       const batchRef = db.collection('batches').doc(batchId);
-      batchOp.set(batchRef, fullBatch);
+      await batchRef.set(cleanDoc(fullBatch));
 
-      createdLeads.forEach((lead) => {
-        const leadRef = db.collection('leads').doc(lead.id);
-        batchOp.set(leadRef, lead);
-      });
+      for (let i = 0; i < createdLeads.length; i += 400) {
+        const chunk = createdLeads.slice(i, i + 400);
+        const batchOp = db.batch();
+        chunk.forEach((lead) => {
+          const leadRef = db.collection('leads').doc(lead.id);
+          batchOp.set(leadRef, cleanDoc(lead));
+        });
+        await batchOp.commit();
+      }
 
-      await batchOp.commit();
-      return { batchId, importedCount: createdLeads.length };
+      return { batchId, importedCount: createdLeads.length, createdLeads };
     } catch (e) {
       console.warn('Failed to commit batch to Firestore, saving to memory fallback:', e);
     }
@@ -246,7 +263,7 @@ export async function saveImportedBatch(
   globalForLeads.__mockBatches = mockBatches;
   globalForLeads.__mockLeads = mockLeads;
 
-  return { batchId, importedCount: createdLeads.length };
+  return { batchId, importedCount: createdLeads.length, createdLeads };
 }
 
 export async function updateLeadStatus(id: string, status: LeadStatus): Promise<boolean> {
@@ -330,5 +347,6 @@ export async function fetchBatches(): Promise<ImportBatch[]> {
       console.warn('Error reading batches from Firestore:', e);
     }
   }
-  return [...mockBatches];
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+  return isDemo ? [...mockBatches] : [];
 }

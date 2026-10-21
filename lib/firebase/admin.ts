@@ -9,8 +9,7 @@ export const isFirebaseAdminConfigured = (): boolean => {
     projectId &&
     clientEmail &&
     privateKey &&
-    !projectId.includes('your-') &&
-    process.env.NEXT_PUBLIC_DEMO_MODE !== 'true'
+    !projectId.includes('your-')
   );
 };
 
@@ -42,7 +41,13 @@ export function getAdminDb(): admin.firestore.Firestore | null {
   const app = getAdminApp();
   if (!app) return null;
   try {
-    return admin.firestore(app);
+    const db = admin.firestore(app);
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // ignoreUndefinedProperties may already be set on this instance
+    }
+    return db;
   } catch (err) {
     console.warn('Failed to get Firestore admin instance:', err);
     return null;

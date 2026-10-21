@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseAndValidateCsv } from '@/lib/csv/parse';
 import { getExistingLeadEmails, getSuppressedEmails, saveImportedBatch } from '@/lib/firebase/leads';
 import { enrichLeadsBatch } from '@/lib/agents/enrich';
+import { createDraft, getLearningExamples } from '@/lib/firebase/drafts';
+import { generatePersonalizedDraft } from '@/lib/agents/personalize';
+import { Lead } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   try {
@@ -76,9 +79,39 @@ export async function POST(req: NextRequest) {
     };
 
     // Save batch and leads
-    let saveResult = { batchId: 'batch-preview', importedCount: finalLeads.length };
+    let saveResult = { batchId: 'batch-preview', importedCount: finalLeads.length, createdLeads: [] as Lead[] };
+    let draftsGenerated = 0;
+
     if (finalLeads.length > 0) {
       saveResult = await saveImportedBatch(batchData, finalLeads);
+
+      // Automatically generate AI outreach drafts for newly imported leads
+      if (saveResult.createdLeads && saveResult.createdLeads.length > 0) {
+        for (const lead of saveResult.createdLeads) {
+          try {
+            const fewShotExamples = await getLearningExamples(lead.niche);
+            const genResult = await generatePersonalizedDraft({
+              lead,
+              fewShotExamples,
+            });
+
+            await createDraft({
+              leadId: lead.id,
+              type: 'initial',
+              subject: genResult.subject,
+              body: genResult.body,
+              aiProvider: genResult.provider,
+              model: genResult.model,
+              status: 'pending',
+              confidence: genResult.confidence,
+              reasoning: genResult.reasoning,
+            });
+            draftsGenerated++;
+          } catch (draftErr) {
+            console.warn(`[AutoDraft] Could not auto-generate draft for lead ${lead.email}:`, draftErr);
+          }
+        }
+      }
     }
 
     return NextResponse.json({
@@ -87,6 +120,7 @@ export async function POST(req: NextRequest) {
       filename,
       totalRows: result.totalRows,
       imported: finalLeads.length,
+      draftsGenerated,
       duplicatesCount: result.duplicates.length,
       invalidCount: result.invalidRows.length,
       enrichedCount,

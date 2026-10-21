@@ -9,7 +9,9 @@ const globalForDrafts = globalThis as unknown as {
   __mockLearningExamples?: LearningExample[];
 };
 
-let mockDrafts: Draft[] = globalForDrafts.__mockDrafts || [
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
+const DEMO_DRAFTS: Draft[] = [
   {
     id: 'draft-1',
     leadId: 'lead-1',
@@ -39,9 +41,8 @@ let mockDrafts: Draft[] = globalForDrafts.__mockDrafts || [
     createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
   },
 ];
-globalForDrafts.__mockDrafts = mockDrafts;
 
-let mockLearningExamples: LearningExample[] = globalForDrafts.__mockLearningExamples || [
+const DEMO_LEARNING_EXAMPLES: LearningExample[] = [
   {
     id: 'learn-1',
     niche: 'club',
@@ -55,31 +56,42 @@ let mockLearningExamples: LearningExample[] = globalForDrafts.__mockLearningExam
     createdAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
   },
 ];
+
+let mockDrafts: Draft[] = isDemoMode ? (globalForDrafts.__mockDrafts || DEMO_DRAFTS) : (globalForDrafts.__mockDrafts || []);
+let mockLearningExamples: LearningExample[] = isDemoMode ? (globalForDrafts.__mockLearningExamples || DEMO_LEARNING_EXAMPLES) : (globalForDrafts.__mockLearningExamples || []);
+
+globalForDrafts.__mockDrafts = mockDrafts;
 globalForDrafts.__mockLearningExamples = mockLearningExamples;
+
+function cleanDoc<T extends Record<string, any>>(obj: T): T {
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      result[key] = value;
+    }
+  }
+  return result;
+}
 
 export async function getDrafts(filter?: {
   status?: string;
   niche?: string;
   search?: string;
 }): Promise<Draft[]> {
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
   const db = getAdminDb();
   let drafts: Draft[] = [];
 
-  if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+  if (db) {
     try {
-      let queryRef: FirebaseFirestore.Query = db.collection('drafts');
-      if (filter?.status && filter.status !== 'all') {
-        queryRef = queryRef.where('status', '==', filter.status);
-      }
-
-      const snap = await queryRef.orderBy('createdAt', 'desc').get();
+      const snap = await db.collection('drafts').get();
       drafts = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Draft));
     } catch (err) {
       console.warn('[Drafts] Firestore read failed, falling back to mock drafts:', err);
-      drafts = [...(globalForDrafts.__mockDrafts || mockDrafts)];
+      drafts = isDemo ? [...(globalForDrafts.__mockDrafts || mockDrafts)] : [...(globalForDrafts.__mockDrafts || [])];
     }
   } else {
-    drafts = [...(globalForDrafts.__mockDrafts || mockDrafts)];
+    drafts = isDemo ? [...(globalForDrafts.__mockDrafts || mockDrafts)] : [...(globalForDrafts.__mockDrafts || [])];
   }
 
   // Populate Lead information for each draft
@@ -113,7 +125,9 @@ export async function getDrafts(filter?: {
     );
   }
 
-  return drafts;
+  return drafts.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
 
 export async function getDraftById(id: string): Promise<Draft | null> {
@@ -130,9 +144,9 @@ export async function createDraft(data: Omit<Draft, 'id' | 'createdAt'>): Promis
     wordCount: data.body.split(/\s+/).filter(Boolean).length,
   };
 
-  if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+  if (db) {
     try {
-      await db.collection('drafts').doc(newDraft.id).set(newDraft);
+      await db.collection('drafts').doc(newDraft.id).set(cleanDoc(newDraft));
     } catch (err) {
       console.warn('[Drafts] Firestore write failed, using mock store:', err);
     }
@@ -339,10 +353,10 @@ export async function getLearningExamples(niche?: LeadNiche): Promise<LearningEx
       const snap = await queryRef.orderBy('createdAt', 'desc').limit(5).get();
       examples = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as LearningExample));
     } catch (err) {
-      examples = [...mockLearningExamples];
+      examples = isDemoMode ? [...mockLearningExamples] : [];
     }
   } else {
-    examples = [...mockLearningExamples];
+    examples = isDemoMode ? [...mockLearningExamples] : [];
   }
 
   if (niche) {

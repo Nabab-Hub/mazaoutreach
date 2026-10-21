@@ -22,6 +22,7 @@ interface ImportSummary {
   filename: string;
   totalRows: number;
   imported: number;
+  draftsGenerated?: number;
   duplicatesCount: number;
   invalidCount: number;
   enrichedCount?: number;
@@ -31,14 +32,14 @@ interface ImportSummary {
   invalidRows: Array<{ row: number; email?: string; reason: string }>;
 }
 
-const SAMPLE_CSV = `name,email,business,niche,city,website,notes
-Vikram Joshi,vikram@mumbaicricketacademy.org,Mumbai Premier Cricket Academy,club,Mumbai,https://mumbaicricketacademy.org,Needs modern registration portal and batch slot booking.
-Natasha Roy,natasha@artofnatasha.com,Art of Natasha (150k YouTube),creator,Bengaluru,https://artofnatasha.com,Looking to launch an exclusive community membership platform.
-Dr. Anjali Verma,contact@vermaskincareclinic.in,Verma Dermatology & Laser Clinic,clinic,Delhi,https://vermaskincareclinic.in,Wants automated patient appointment confirmations via WhatsApp.
-Sameer Khan,owner@khanartisansweets.com,Khan Artisan Sweets & Bakery,shop,Hyderabad,https://khanartisansweets.com,Looking for an online ordering system for corporate festival gift packs.
-Kavita Sen,kavita@sensolutions.tech,Sen Automation Systems,other,Pune,https://sensolutions.tech,Interested in customer support AI chatbot and backend API integrations.
-Duplicate Test,vikram@mumbaicricketacademy.org,Duplicate Club,club,Mumbai,,Testing duplicate rejection
-Invalid Email Test,bademail-without-at-sign,Bad Email Shop,shop,Kolkata,,Testing syntax validation
+const SAMPLE_CSV = `name,email,business,niche,company_description,city,website,notes
+Vikram Joshi,vikram@mumbaicricketacademy.org,Mumbai Premier Cricket Academy,club,Elite cricket coaching academy conducting youth leagues and corporate tournaments,Mumbai,https://mumbaicricketacademy.org,Needs modern registration portal and batch slot booking.
+Natasha Roy,natasha@artofnatasha.com,Art of Natasha,creator,Digital watercolor artist and content creator with 150k YouTube subscribers selling online masterclasses,Bengaluru,https://artofnatasha.com,Looking to launch an exclusive community membership platform.
+Dr. Anjali Verma,contact@vermaskincareclinic.in,Verma Dermatology & Laser Clinic,clinic,Advanced clinical skincare dermatology and cosmetic laser treatments center,Delhi,https://vermaskincareclinic.in,Wants automated patient appointment confirmations via WhatsApp.
+Sameer Khan,owner@khanartisansweets.com,Khan Artisan Sweets & Bakery,shop,Premium gourmet bakery and Indian sweets confectionery store,Hyderabad,https://khanartisansweets.com,Looking for an online ordering system for corporate festival gift packs.
+Kavita Sen,kavita@sensolutions.tech,Sen Automation Systems,other,Industrial IoT systems integrator designing factory workflow monitoring sensors,Pune,https://sensolutions.tech,Interested in customer support AI chatbot and backend API integrations.
+Duplicate Test,vikram@mumbaicricketacademy.org,Duplicate Club,club,Test duplicate description,Mumbai,,Testing duplicate rejection
+Invalid Email Test,bademail-without-at-sign,Bad Email Shop,shop,Invalid email description,Kolkata,,Testing syntax validation
 `;
 
 export default function ImportPage() {
@@ -267,7 +268,7 @@ export default function ImportPage() {
                     Drag and drop your client leads CSV here
                   </p>
                   <p className="text-xs text-slate-400 mt-1">
-                    Required: <span className="text-indigo-300 font-mono">name, email</span>. Optional: <span className="text-slate-300 font-mono">business, niche, city, website, notes</span>
+                    Required: <span className="text-indigo-300 font-mono">name, email</span>. Recommended: <span className="text-purple-300 font-mono">company_description</span> (used by AI to generate tailored pitches). Optional: <span className="text-slate-300 font-mono">business, niche, city, website, notes</span>
                   </p>
                 </div>
               )}
@@ -281,7 +282,7 @@ export default function ImportPage() {
                 rows={10}
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
-                placeholder="name,email,business,niche,city,website,notes&#10;John Doe,john@example.com,Doe Fitness,club,London,https://example.com,Looking for booking system"
+                placeholder="name,email,business,niche,company_description,city,website,notes&#10;John Doe,john@example.com,Doe Fitness,club,Premier athletic gym and wellness club with 500 active members,London,https://example.com,Looking for booking system"
                 className="w-full p-4 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -379,6 +380,15 @@ export default function ImportPage() {
                 >
                   Import Another CSV
                 </button>
+                {result.draftsGenerated && result.draftsGenerated > 0 ? (
+                  <Link
+                    href="/queue"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold shadow-md shadow-purple-600/25 transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Review {result.draftsGenerated} AI Drafts</span>
+                  </Link>
+                ) : null}
                 <Link
                   href="/leads"
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all"
@@ -390,7 +400,7 @@ export default function ImportPage() {
             </div>
 
             {/* Metric Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-6">
               <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Total Rows
@@ -408,9 +418,19 @@ export default function ImportPage() {
               <div className="p-4 rounded-xl bg-purple-950/30 border border-purple-800/40">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-purple-400 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 text-purple-400" />
-                  <span>AI Enriched</span>
+                  <span>Drafts Generated</span>
                 </p>
                 <p className="text-2xl font-bold text-purple-300 mt-1">
+                  {result.draftsGenerated ?? 0}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-800/40">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-indigo-400" />
+                  <span>AI Enriched</span>
+                </p>
+                <p className="text-2xl font-bold text-indigo-300 mt-1">
                   {result.enrichedCount ?? 0}
                 </p>
               </div>

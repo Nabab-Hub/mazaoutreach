@@ -70,6 +70,7 @@ export async function inspectAndEnrichLead(
 - Business Name: ${lead.businessName || 'Missing'}
 - Website: ${lead.website || 'None'}
 - Current Niche: ${lead.niche || 'Unknown'}
+- Company Description: ${lead.companyDescription || 'None'}
 - Current Notes: ${lead.notes || 'None'}
 
 Predict niche and provide operational context notes without inventing private contact details.`;

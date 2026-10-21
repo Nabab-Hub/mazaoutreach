@@ -81,7 +81,22 @@ export function parseAndValidateCsv(
     const nicheKey = findHeaderKey(row, ['niche', 'category', 'type', 'industry', 'profession']);
     const cityKey = findHeaderKey(row, ['city', 'location', 'town', 'state', 'region']);
     const websiteKey = findHeaderKey(row, ['website', 'site', 'url', 'web', 'link']);
-    const notesKey = findHeaderKey(row, ['notes', 'note', 'description', 'comments', 'details']);
+    const companyDescriptionKey = findHeaderKey(row, [
+      'company_description',
+      'company description',
+      'companydescription',
+      'company_profile',
+      'company profile',
+      'business_description',
+      'business description',
+      'about_company',
+      'about company',
+      'about',
+      'overview',
+      'description',
+      'summary',
+    ]);
+    const notesKey = findHeaderKey(row, ['notes', 'note', 'comments', 'details', 'remarks']);
 
     const rawEmail = emailKey ? row[emailKey]?.trim() : undefined;
     const rawName = nameKey ? row[nameKey]?.trim() : undefined;
@@ -141,6 +156,7 @@ export function parseAndValidateCsv(
     // Business Name fallback
     const businessName = (businessKey && row[businessKey]?.trim()) || rawName || 'Business Owner';
     const name = rawName || businessName.split(' ')[0] || 'There';
+    const companyDescription = companyDescriptionKey ? row[companyDescriptionKey]?.trim() : undefined;
 
     // Niche extraction or inference
     let niche: LeadNiche = 'other';
@@ -148,13 +164,13 @@ export function parseAndValidateCsv(
     if (['club', 'creator', 'shop', 'clinic', 'other'].includes(rawNiche)) {
       niche = rawNiche as LeadNiche;
     } else {
-      // Infer niche based on business name, website, and notes
-      const inferenceText = `${businessName} ${row[websiteKey || ''] || ''} ${row[notesKey || ''] || ''}`;
+      // Infer niche based on business name, company description, website, and notes
+      const inferenceText = `${businessName} ${companyDescription || ''} ${row[websiteKey || ''] || ''} ${row[notesKey || ''] || ''}`;
       niche = inferNiche(inferenceText);
     }
 
     // Collect additional custom fields
-    const standardKeys = new Set([nameKey, emailKey, businessKey, nicheKey, cityKey, websiteKey, notesKey].filter(Boolean));
+    const standardKeys = new Set([nameKey, emailKey, businessKey, nicheKey, companyDescriptionKey, cityKey, websiteKey, notesKey].filter(Boolean));
     const customFields: Record<string, string | number | boolean> = {};
     for (const [k, v] of Object.entries(row)) {
       if (!standardKeys.has(k) && v !== undefined && v.trim() !== '') {
@@ -167,6 +183,7 @@ export function parseAndValidateCsv(
       email,
       businessName,
       niche,
+      companyDescription,
       city: cityKey ? row[cityKey]?.trim() : undefined,
       website: websiteKey ? row[websiteKey]?.trim() : undefined,
       notes: notesKey ? row[notesKey]?.trim() : undefined,

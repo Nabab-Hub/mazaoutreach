@@ -2,8 +2,10 @@ import { EmailAccount } from '../types';
 import { getAdminDb } from './admin';
 import { encryptToken, decryptToken } from '../crypto/encryption';
 
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+
 // In-memory demo email accounts
-let mockAccounts: EmailAccount[] = [
+const DEMO_ACCOUNTS: EmailAccount[] = [
   {
     id: 'acct-1',
     gmailAddress: 'alex.consulting@gmail.com',
@@ -30,17 +32,22 @@ let mockAccounts: EmailAccount[] = [
   },
 ];
 
+let mockAccounts: EmailAccount[] = isDemoMode ? [...DEMO_ACCOUNTS] : [];
+
 export async function getAccounts(): Promise<EmailAccount[]> {
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
   const db = getAdminDb();
-  if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+  if (db) {
     try {
-      const snap = await db.collection('email_accounts').orderBy('createdAt', 'desc').get();
-      return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as EmailAccount));
+      const snap = await db.collection('email_accounts').get();
+      const accounts = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as EmailAccount));
+      return accounts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch (err) {
       console.warn('[Accounts] Firestore read failed, falling back to mock:', err);
+      return isDemo ? [...mockAccounts] : [];
     }
   }
-  return [...mockAccounts];
+  return isDemo ? [...mockAccounts] : [];
 }
 
 export async function getAccountById(id: string): Promise<EmailAccount | null> {

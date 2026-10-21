@@ -25,6 +25,7 @@ export interface Lead {
   email: string;
   businessName: string;
   niche: LeadNiche;
+  companyDescription?: string;
   city?: string;
   website?: string;
   notes?: string;
