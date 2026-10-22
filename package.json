@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next dev -p 3000",
-    "build": "node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next build",
-    "start": "node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next start",
+    "dev": "node api.js && node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next dev -p 3000",
+    "build": "node api.js && node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next build",
+    "start": "node api.js && node --require ./lib/patch-env.cjs ./node_modules/next/dist/bin/next start",
     "lint": "next lint"
   },
   "dependencies": {

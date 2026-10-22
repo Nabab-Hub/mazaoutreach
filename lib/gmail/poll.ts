@@ -263,10 +263,10 @@ export async function pollActiveInboxes(): Promise<PollResult> {
     try {
       const accessToken = await refreshAccessToken(account.encryptedRefreshToken);
 
-      // Search for any messages not sent by ourselves in the last 14 days
-      const listQuery = encodeURIComponent('newer_than:14d -from:me');
+      // Search for any messages not sent by ourselves in the last 7 days (lightweight query)
+      const listQuery = encodeURIComponent('newer_than:7d -from:me');
       const listRes = await fetch(
-        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${listQuery}&maxResults=50`,
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${listQuery}&maxResults=15`,
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
@@ -287,8 +287,9 @@ export async function pollActiveInboxes(): Promise<PollResult> {
           continue;
         }
 
+        // Lightweight metadata fetch first to conserve API units
         const msgRes = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`,
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=In-Reply-To&metadataHeaders=References&metadataHeaders=Message-ID`,
           {
             headers: { Authorization: `Bearer ${accessToken}` },
           }
@@ -310,8 +311,6 @@ export async function pollActiveInboxes(): Promise<PollResult> {
         // Extract clean email address from "From" header
         const fromMatch = fromHeader.match(/<([^>]+)>/) || [null, fromHeader.trim()];
         const fromEmail = (fromMatch[1] || fromHeader).toLowerCase().trim();
-
-        console.log(`[PollEngine] Inspected msg: id=${m.id}, from=${fromEmail}, subject="${subject}"`);
 
         // Skip messages sent from the account itself
         if (fromEmail === account.gmailAddress.toLowerCase().trim()) {
@@ -339,14 +338,28 @@ export async function pollActiveInboxes(): Promise<PollResult> {
           }
         }
 
-        // 3. Or check if lead email is mentioned in subject or fromHeader
+        // 3. Or check if lead email is mentioned in fromHeader
         if (!matchedLead) {
           matchedLead = leads.find((l) => fromEmail.includes(l.email.toLowerCase().trim()) || l.email.toLowerCase().trim().includes(fromEmail));
         }
 
-        // If matched to a lead in our pipeline
+        // If matched to a lead in our pipeline, fetch full body only now!
         if (matchedLead) {
-          const body = extractBodyFromPayload(msg.payload) || msg.snippet || 'No message content';
+          let body = msg.snippet || 'No message content';
+          try {
+            const fullRes = await fetch(
+              `https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`,
+              {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              }
+            );
+            if (fullRes.ok) {
+              const fullMsg = await fullRes.json();
+              body = extractBodyFromPayload(fullMsg.payload) || fullMsg.snippet || body;
+            }
+          } catch {
+            // fallback to snippet
+          }
 
           console.log(`[PollEngine] Inbound reply detected from ${matchedLead.name} (${fromEmail})!`);
 
@@ -382,12 +395,12 @@ declare global {
 
 export function startInboxPollerDaemon() {
   if (globalThis.__inboxPollerInterval) return;
-  console.log('[PollEngine] Background poller daemon started (every 30s).');
+  console.log('[PollEngine] Background poller daemon started (every 60s).');
   globalThis.__inboxPollerInterval = setInterval(async () => {
     try {
       await pollActiveInboxes();
     } catch (e: any) {
       console.warn('[PollEngine] Daemon poll cycle error:', e.message);
     }
-  }, 30000);
+  }, 60000);
 }

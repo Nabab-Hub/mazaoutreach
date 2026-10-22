@@ -88,7 +88,11 @@ export default function AccountsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: account.id,
-          updates: { status: nextStatus },
+          updates: {
+            status: nextStatus,
+            errorCount: nextStatus === 'active' ? 0 : account.errorCount,
+            lastErrorMessage: nextStatus === 'active' ? '' : account.lastErrorMessage,
+          },
         }),
       });
       const data = await res.json();

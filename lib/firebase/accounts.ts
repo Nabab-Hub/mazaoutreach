@@ -133,8 +133,23 @@ export async function recordAccountError(id: string, errorMessage: string): Prom
   const account = await getAccountById(id);
   if (!account) return;
 
+  // Do NOT count temporary rate limit / query cost errors towards pausing the account
+  const isTransientRateLimit =
+    errorMessage.includes('RATE_LIMIT_EXCEEDED') ||
+    errorMessage.includes('Units per minute') ||
+    errorMessage.includes('429') ||
+    errorMessage.includes('rateLimitExceeded');
+
+  if (isTransientRateLimit) {
+    console.warn(`[Accounts] Transient Gmail rate limit for ${account.gmailAddress}. Account kept ACTIVE.`);
+    await updateAccount(id, {
+      lastErrorMessage: `Temporary per-minute rate limit (resolves automatically): ${errorMessage.substring(0, 150)}`,
+    });
+    return;
+  }
+
   const errorCount = (account.errorCount || 0) + 1;
-  const shouldPause = errorCount >= 3;
+  const shouldPause = errorCount >= 5;
 
   await updateAccount(id, {
     errorCount,
