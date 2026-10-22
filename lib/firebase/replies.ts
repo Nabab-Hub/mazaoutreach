@@ -51,12 +51,14 @@ export async function getReplies(leadId?: string): Promise<Reply[]> {
 
   if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
     try {
-      let queryRef: FirebaseFirestore.Query = db.collection('replies');
+      let snap;
       if (leadId) {
-        queryRef = queryRef.where('leadId', '==', leadId);
+        snap = await db.collection('replies').where('leadId', '==', leadId).get();
+      } else {
+        snap = await db.collection('replies').orderBy('receivedAt', 'desc').get();
       }
-      const snap = await queryRef.orderBy('receivedAt', 'desc').get();
       replies = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Reply));
+      replies.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
     } catch (err) {
       console.warn('[Replies] Firestore read failed, using mock store:', err);
       replies = [...(globalForReplies.__mockReplies || mockReplies)];

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getReplies, getConversationThread } from '@/lib/firebase/replies';
-import { pollActiveInboxes, processInboundReply } from '@/lib/gmail/poll';
+import { pollActiveInboxes, processInboundReply, startInboxPollerDaemon } from '@/lib/gmail/poll';
 import { getLeads } from '@/lib/firebase/leads';
 
 export async function GET(req: NextRequest) {
   try {
+    startInboxPollerDaemon();
     const { searchParams } = new URL(req.url);
     const leadId = searchParams.get('leadId');
 

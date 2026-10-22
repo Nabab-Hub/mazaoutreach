@@ -5,13 +5,9 @@ import { Lead, Reply } from '../types';
 export async function notifyOwnerOfReply(opts: {
   lead: Lead;
   reply: Reply;
+  autoReplied?: boolean;
 }): Promise<void> {
-  const { lead, reply } = opts;
-
-  // Only trigger instant alerts for 'interested' or 'needsHuman' leads
-  if (reply.classification !== 'interested' && !reply.needsHuman) {
-    return;
-  }
+  const { lead, reply, autoReplied } = opts;
 
   const alertOpts: TelegramAlertOpts = {
     leadName: lead.name,
@@ -21,6 +17,7 @@ export async function notifyOwnerOfReply(opts: {
     summary: reply.summary,
     replySnippet: reply.snippet || reply.body,
     needsHuman: reply.needsHuman,
+    autoReplied,
   };
 
   // Dispatches both Telegram message and email to the platform owner in parallel

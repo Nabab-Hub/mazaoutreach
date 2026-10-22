@@ -390,11 +390,7 @@ export async function getLearningExamples(niche?: LeadNiche): Promise<LearningEx
 
   if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
     try {
-      let queryRef: FirebaseFirestore.Query = db.collection('learning_examples');
-      if (niche) {
-        queryRef = queryRef.where('niche', '==', niche);
-      }
-      const snap = await queryRef.orderBy('createdAt', 'desc').limit(5).get();
+      const snap = await db.collection('learning_examples').orderBy('createdAt', 'desc').limit(20).get();
       examples = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as LearningExample));
     } catch (err) {
       examples = isDemoMode ? [...mockLearningExamples] : [];

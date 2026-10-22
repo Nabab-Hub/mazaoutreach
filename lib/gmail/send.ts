@@ -36,8 +36,48 @@ export async function getSentEmails(): Promise<SentEmail[]> {
   return [...mockSentEmails];
 }
 
+function formatBodyHtml(body: string): string {
+  let safe = (body || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Convert markdown links [Text](url) to styled anchor tags
+  safe = safe.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" style="color: #0b57d0; text-decoration: underline;">$1</a>'
+  );
+
+  // Convert bare URLs (not already in anchor) to clickable links
+  safe = safe.replace(
+    /(^|[^"'>])(https?:\/\/[^\s<]+)/g,
+    '$1<a href="$2" target="_blank" style="color: #0b57d0; text-decoration: underline;">$2</a>'
+  );
+
+  const paragraphs = safe.split(/\r?\n\r?\n/);
+  const htmlParagraphs = paragraphs
+    .map((p) => {
+      const formattedLines = p.replace(/\r?\n/g, '<br/>');
+      return `<p style="margin: 0 0 16px 0; line-height: 1.6;">${formattedLines}</p>`;
+    })
+    .join('\n');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #222222; background-color: #ffffff;">
+  <div style="max-width: 600px; margin: 0; padding: 4px 0;">
+    ${htmlParagraphs}
+  </div>
+</body>
+</html>`;
+}
+
 /**
- * Builds standard RFC 2822 email encoded in base64url format
+ * Builds standard RFC 2822 email encoded in base64url format with high deliverability headers
  */
 export function buildRawRfc2822Message(opts: {
   from: string;
@@ -49,20 +89,52 @@ export function buildRawRfc2822Message(opts: {
   references?: string;
 }): string {
   const fromHeader = opts.fromName ? `"${opts.fromName}" <${opts.from}>` : opts.from;
+  const domain = opts.from.split('@')[1] || 'gmail.com';
+  const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 10)}@${domain}>`;
+  const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+  // Plaintext version cleans raw markdown links so plain-text readers see clean URLs
+  const plainTextBody = opts.body
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1: $2')
+    .trim();
+
+  const htmlBody = formatBodyHtml(opts.body);
+
   const lines = [
     `From: ${fromHeader}`,
     `To: ${opts.to}`,
+    `Reply-To: ${fromHeader}`,
     `Subject: =?utf-8?B?${Buffer.from(opts.subject).toString('base64')}?=`,
+    `Date: ${new Date().toUTCString()}`,
+    `Message-ID: ${messageId}`,
+    `List-Unsubscribe: <mailto:${opts.from}?subject=unsubscribe>`,
     `MIME-Version: 1.0`,
-    `Content-Type: text/plain; charset=utf-8`,
-    `Content-Transfer-Encoding: base64`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
   ];
 
   if (opts.inReplyTo) lines.push(`In-Reply-To: ${opts.inReplyTo}`);
   if (opts.references) lines.push(`References: ${opts.references}`);
 
   lines.push(''); // blank line separating headers and body
-  lines.push(Buffer.from(opts.body).toString('base64'));
+
+  // 1. Text/Plain part
+  lines.push(`--${boundary}`);
+  lines.push('Content-Type: text/plain; charset=utf-8');
+  lines.push('Content-Transfer-Encoding: base64');
+  lines.push('');
+  lines.push(Buffer.from(plainTextBody, 'utf-8').toString('base64'));
+  lines.push('');
+
+  // 2. Text/HTML part
+  lines.push(`--${boundary}`);
+  lines.push('Content-Type: text/html; charset=utf-8');
+  lines.push('Content-Transfer-Encoding: base64');
+  lines.push('');
+  lines.push(Buffer.from(htmlBody, 'utf-8').toString('base64'));
+  lines.push('');
+
+  // Closing boundary
+  lines.push(`--${boundary}--`);
 
   const rawMessage = lines.join('\r\n');
 
@@ -90,6 +162,9 @@ export async function sendOutreachEmail(opts: {
   lead: Lead;
   draft: Draft;
   accountOverride?: EmailAccount;
+  inReplyTo?: string;
+  references?: string;
+  threadId?: string;
 }): Promise<SendEmailResult> {
   const { lead, draft, accountOverride } = opts;
 
@@ -113,7 +188,7 @@ export async function sendOutreachEmail(opts: {
   const bodyToSend = ensureDefaultSignature(draft.editedBody || draft.body);
 
   let messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-  let threadId = `th_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  let threadId = opts.threadId || `th_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 
   // 3. Execution: Live Gmail API vs Mock Engine
   const isDemo =
@@ -130,16 +205,37 @@ export async function sendOutreachEmail(opts: {
         to: lead.email,
         subject: subjectToSend,
         body: bodyToSend,
+        inReplyTo: opts.inReplyTo,
+        references: opts.references,
       });
 
-      const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      const requestPayload: { raw: string; threadId?: string } = { raw: rawBase64Url };
+      if (opts.threadId) {
+        requestPayload.threadId = opts.threadId;
+      }
+
+      let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ raw: rawBase64Url }),
+        body: JSON.stringify(requestPayload),
       });
+
+      // If threadId was from a different account or not found, retry without threadId
+      if (!res.ok && res.status === 404 && requestPayload.threadId) {
+        console.warn(`[GmailSend] threadId ${requestPayload.threadId} not found in this mailbox, retrying without threadId...`);
+        delete requestPayload.threadId;
+        res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestPayload),
+        });
+      }
 
       if (!res.ok) {
         const errText = await res.text();

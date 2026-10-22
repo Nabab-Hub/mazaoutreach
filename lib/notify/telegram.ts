@@ -6,6 +6,7 @@ export interface TelegramAlertOpts {
   summary: string;
   replySnippet: string;
   needsHuman: boolean;
+  autoReplied?: boolean;
   dashboardUrl?: string;
 }
 
@@ -15,22 +16,46 @@ export async function sendTelegramAlert(opts: TelegramAlertOpts): Promise<boolea
 
   const dashboardUrl = opts.dashboardUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-  const icon = opts.classification === 'interested' ? '🔥' : '⚠️';
-  const tag = opts.needsHuman ? '🚨 [REQUIRES HUMAN ATTENTION]' : '🎯 [NEW INTERESTED PROSPECT]';
+  let icon = '💬';
+  let tag = '💬 [NEW PROSPECT REPLY]';
+
+  if (opts.classification === 'interested') {
+    icon = '🔥';
+    tag = '🎯 [HOT PROSPECT - INTERESTED!]';
+  } else if (opts.classification === 'question') {
+    icon = '❓';
+    tag = '❓ [PROSPECT QUESTION]';
+  } else if (opts.classification === 'not_interested') {
+    icon = 'ℹ️';
+    tag = 'ℹ️ [PROSPECT DECLINED / NOT INTERESTED]';
+  } else if (opts.classification === 'unsubscribe') {
+    icon = '🛑';
+    tag = '🛑 [OPT-OUT / UNSUBSCRIBE]';
+  }
+
+  if (opts.needsHuman) {
+    tag = `🚨 [HUMAN ATTENTION NEEDED] • ${tag}`;
+  }
+
+  const autoReplyStatus = opts.autoReplied
+    ? '✅ <b>Auto-Reply:</b> Sent immediately to prospect in thread with calendar link.'
+    : '⏳ <b>Auto-Reply:</b> Prepared in Approval Queue for 1-click send.';
 
   const messageText = `${icon} <b>${tag}</b>
 
 <b>Lead:</b> ${opts.leadName} (${opts.businessName})
-<b>Niche:</b> ${opts.niche}
+<b>Niche:</b> ${opts.niche || 'B2B'}
 <b>Category:</b> ${opts.classification.toUpperCase()}
 
 <b>Summary:</b>
 <i>"${opts.summary}"</i>
 
 <b>Prospect Message:</b>
-<blockquote>${opts.replySnippet.slice(0, 200)}...</blockquote>
+<blockquote>${(opts.replySnippet || '').slice(0, 300)}</blockquote>
 
-👉 <a href="${dashboardUrl}/pipeline">Open Pipeline Dashboard</a>`;
+${autoReplyStatus}
+
+👉 <a href="${dashboardUrl}/pipeline">Pipeline Dashboard</a> • <a href="${dashboardUrl}/approvals">Approval Queue</a>`;
 
   if (!token || !chatId || token.includes('your_') || chatId.includes('your_')) {
     console.log(`[TelegramAlert (Simulation)]\n${messageText.replace(/<[^>]+>/g, '')}`);

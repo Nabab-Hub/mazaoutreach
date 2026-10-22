@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppNotification } from '@/lib/types';
-import { getReplies } from '@/lib/firebase/replies';
-import { getLeads } from '@/lib/firebase/leads';
+import { startInboxPollerDaemon } from '@/lib/gmail/poll';
+import { getAdminDb } from '@/lib/firebase/admin';
 
 // Global mock notifications store for session persistence
 declare global {
@@ -9,46 +9,32 @@ declare global {
 }
 
 if (!globalThis.__mockNotifications) {
-  globalThis.__mockNotifications = [
-    {
-      id: 'notif-1',
-      title: '🔥 Hot Lead Detected!',
-      message: 'Nexus Fitness replied: "Send over your calendar link or availability for 10 min call"',
-      type: 'lead_interested',
-      leadId: 'lead-1',
-      read: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString(),
-      link: '/pipeline',
-    },
-    {
-      id: 'notif-2',
-      title: '⚠️ Human Approval Needed',
-      message: 'Aura Aesthetics asked about pricing & technical commitments.',
-      type: 'needs_human',
-      leadId: 'lead-4',
-      read: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-      link: '/approvals',
-    },
-    {
-      id: 'notif-3',
-      title: '✉️ Automated Follow-up Dispatched',
-      message: 'Day 3 follow-up delivered to Urban Roast Coffee.',
-      type: 'followup_sent',
-      leadId: 'lead-3',
-      read: true,
-      createdAt: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
-      link: '/leads',
-    },
-  ];
+  globalThis.__mockNotifications = [];
 }
 
 export async function GET() {
   try {
+    startInboxPollerDaemon();
+
+    let notifs: AppNotification[] = globalThis.__mockNotifications || [];
+    const db = getAdminDb();
+    if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+      try {
+        const snap = await db.collection('notifications').orderBy('createdAt', 'desc').limit(30).get();
+        if (!snap.empty) {
+          const dbNotifs = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as AppNotification));
+          notifs = dbNotifs;
+          globalThis.__mockNotifications = dbNotifs;
+        }
+      } catch (e) {
+        // Fall back to memory
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      notifications: globalThis.__mockNotifications || [],
-      unreadCount: (globalThis.__mockNotifications || []).filter((n) => !n.read).length,
+      notifications: notifs,
+      unreadCount: notifs.filter((n) => !n.read).length,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
