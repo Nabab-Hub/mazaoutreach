@@ -4,7 +4,7 @@ import { refreshAccessToken } from './oauth';
 import { incrementAccountSent, recordAccountError } from '../firebase/accounts';
 import { getSuppressedEmails, updateLeadStatus } from '../firebase/leads';
 import { getAdminDb } from '../firebase/admin';
-import { ensureDefaultSignature } from '../templates/signature';
+import { ensureDefaultSignature, renderEmailHtml, renderEmailPlainText } from '../templates/signature';
 
 // In-memory demo store for sent emails
 let mockSentEmails: SentEmail[] = [
@@ -36,46 +36,6 @@ export async function getSentEmails(): Promise<SentEmail[]> {
   return [...mockSentEmails];
 }
 
-function formatBodyHtml(body: string): string {
-  let safe = (body || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // Convert markdown links [Text](url) to styled anchor tags
-  safe = safe.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" target="_blank" style="color: #0b57d0; text-decoration: underline;">$1</a>'
-  );
-
-  // Convert bare URLs (not already in anchor) to clickable links
-  safe = safe.replace(
-    /(^|[^"'>])(https?:\/\/[^\s<]+)/g,
-    '$1<a href="$2" target="_blank" style="color: #0b57d0; text-decoration: underline;">$2</a>'
-  );
-
-  const paragraphs = safe.split(/\r?\n\r?\n/);
-  const htmlParagraphs = paragraphs
-    .map((p) => {
-      const formattedLines = p.replace(/\r?\n/g, '<br/>');
-      return `<p style="margin: 0 0 16px 0; line-height: 1.6;">${formattedLines}</p>`;
-    })
-    .join('\n');
-
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #222222; background-color: #ffffff;">
-  <div style="max-width: 600px; margin: 0; padding: 4px 0;">
-    ${htmlParagraphs}
-  </div>
-</body>
-</html>`;
-}
-
 /**
  * Builds standard RFC 2822 email encoded in base64url format with high deliverability headers
  */
@@ -93,12 +53,8 @@ export function buildRawRfc2822Message(opts: {
   const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 10)}@${domain}>`;
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
-  // Plaintext version cleans raw markdown links so plain-text readers see clean URLs
-  const plainTextBody = opts.body
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1: $2')
-    .trim();
-
-  const htmlBody = formatBodyHtml(opts.body);
+  const plainTextBody = renderEmailPlainText(opts.body, opts.from);
+  const htmlBody = renderEmailHtml(opts.body, opts.from);
 
   const lines = [
     `From: ${fromHeader}`,

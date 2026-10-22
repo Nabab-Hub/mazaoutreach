@@ -10,11 +10,13 @@ Do not invent facts, prices or claims. Match the tone examples.
 
 Every email sign-off MUST strictly end with this signature block to establish trust and credibility:
 Best regards,
+
 Sk Ahidulla
-+918609720621
-skahidulla568@gmail.com
-[Youtube](https://youtube.com/@codingkamaza)
-[Website](https://www.codingkamaza.in)
+Full-Stack Engineer & Automation Specialist
+Phone: +91 86097 20621
+Email: skahidulla568@gmail.com
+Website: https://www.codingkamaza.in
+YouTube: https://youtube.com/@codingkamaza
 
 Reply STOP to unsubscribe.
 

@@ -10,11 +10,13 @@ If the lead asks to unsubscribe, acknowledge courteously.
 
 Every email must end with the sender signature block:
 Best regards,
+
 Sk Ahidulla
-+918609720621
-skahidulla568@gmail.com
-[Youtube](https://youtube.com/@codingkamaza)
-[Website](https://www.codingkamaza.in)
+Full-Stack Engineer & Automation Specialist
+Phone: +91 86097 20621
+Email: skahidulla568@gmail.com
+Website: https://www.codingkamaza.in
+YouTube: https://youtube.com/@codingkamaza
 
 Reply STOP to unsubscribe.
 
