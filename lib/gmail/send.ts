@@ -49,21 +49,23 @@ export function buildRawRfc2822Message(opts: {
   references?: string;
 }): string {
   const fromHeader = opts.fromName ? `"${opts.fromName}" <${opts.from}>` : opts.from;
-  const domain = opts.from.split('@')[1] || 'gmail.com';
-  const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2, 10)}@${domain}>`;
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 
   const plainTextBody = renderEmailPlainText(opts.body, opts.from);
   const htmlBody = renderEmailHtml(opts.body, opts.from);
 
+  const unsubUrl = `https://www.codingkamaza.in/api/unsubscribe?email=${encodeURIComponent(opts.to)}`;
+
+  // High-deliverability RFC headers:
+  // Note: Message-ID is omitted so Gmail API generates its authentic DKIM-signed Message-ID header.
   const lines = [
     `From: ${fromHeader}`,
     `To: ${opts.to}`,
     `Reply-To: ${fromHeader}`,
     `Subject: =?utf-8?B?${Buffer.from(opts.subject).toString('base64')}?=`,
     `Date: ${new Date().toUTCString()}`,
-    `Message-ID: ${messageId}`,
-    `List-Unsubscribe: <mailto:${opts.from}?subject=unsubscribe>`,
+    `List-Unsubscribe: <mailto:${opts.from}?subject=unsubscribe>, <${unsubUrl}>`,
+    `List-Unsubscribe-Post: List-Unsubscribe=One-Click`,
     `MIME-Version: 1.0`,
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
   ];
@@ -141,7 +143,7 @@ export async function sendOutreachEmail(opts: {
   }
 
   const subjectToSend = (draft.editedSubject || draft.subject).trim();
-  const bodyToSend = ensureDefaultSignature(draft.editedBody || draft.body);
+  const bodyToSend = ensureDefaultSignature(draft.editedBody || draft.body, account.gmailAddress);
 
   let messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   let threadId = opts.threadId || `th_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;

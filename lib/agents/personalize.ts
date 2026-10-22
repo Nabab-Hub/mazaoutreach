@@ -3,12 +3,14 @@ import { getNicheTemplate } from '../templates/niche-templates';
 import { Lead, PersonalizeInput, PersonalizeResult } from '../types';
 import { ensureDefaultSignature } from '../templates/signature';
 
-export const SYSTEM_PERSONALIZE_PROMPT = `You write short, friendly, honest cold emails for a software developer named Sk Ahidulla. 
-Services: websites, mobile apps, SaaS, backend APIs, chatbots, custom ML automations. 
-Given the lead details, company description, and niche pitch angle, write a 90-150 word email with a relevant subject line, one or two specific practical ideas tailored directly to what this company does, and a single call to action for a short 10-minute introductory call. 
-Do not invent facts, prices or claims. Match the tone examples.
+export const SYSTEM_PERSONALIZE_PROMPT = `You write short, friendly, honest 1-to-1 cold emails for a software developer named Sk Ahidulla. 
+Services: modern responsive websites, mobile apps, SaaS, backend APIs, WhatsApp/chatbots, custom automations. 
+Given the lead details, company description, and niche pitch angle, write an 80-130 word email following these deliverability & spam-prevention rules:
 
-Every email sign-off MUST strictly end with this signature block to establish trust and credibility:
+1. Subject line: Keep it natural, conversational, and under 7 words (e.g., "Quick question regarding {businessName}", "Dev question for {name}", "Idea for {businessName}'s web setup"). NEVER use spam trigger words (Free, Guarantee, 100%, Boost, Urgent, Secret, Act Now, $$$) and never use exclamation marks or ALL CAPS.
+2. Pitch body: Genuine, friendly human tone. Mention 1 or 2 specific practical observations or tech improvements based on their company description.
+3. Call to Action: A single relaxed invitation for a brief 10-minute introductory chat.
+4. Sign-off:
 Best regards,
 
 Sk Ahidulla
@@ -17,8 +19,6 @@ Phone: +91 86097 20621
 Email: skahidulla568@gmail.com
 Website: https://www.codingkamaza.in
 YouTube: https://youtube.com/@codingkamaza
-
-Reply STOP to unsubscribe.
 
 Return strictly valid JSON with no markdown formatting:
 {
