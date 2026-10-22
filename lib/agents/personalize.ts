@@ -1,12 +1,21 @@
 import { aiRouter } from '../ai/router';
 import { getNicheTemplate } from '../templates/niche-templates';
 import { Lead, PersonalizeInput, PersonalizeResult } from '../types';
+import { ensureDefaultSignature } from '../templates/signature';
 
-export const SYSTEM_PERSONALIZE_PROMPT = `You write short, friendly, honest cold emails for a freelance developer. 
+export const SYSTEM_PERSONALIZE_PROMPT = `You write short, friendly, honest cold emails for a software developer named Sk Ahidulla. 
 Services: websites, mobile apps, SaaS, backend APIs, chatbots, custom ML automations. 
 Given the lead details, company description, and niche pitch angle, write a 90-150 word email with a relevant subject line, one or two specific practical ideas tailored directly to what this company does, and a single call to action for a short 10-minute introductory call. 
 Do not invent facts, prices or claims. Match the tone examples.
-Every generated email MUST end with the compliance line:
+
+Every email sign-off MUST strictly end with this signature block to establish trust and credibility:
+Best regards,
+Sk Ahidulla
++918609720621
+skahidulla568@gmail.com
+[Youtube](https://youtube.com/@codingkamaza)
+[Website](https://www.codingkamaza.in)
+
 Reply STOP to unsubscribe.
 
 Return strictly valid JSON with no markdown formatting:
@@ -104,13 +113,7 @@ You MUST rewrite both the subject line and the email body to explicitly satisfy 
     };
   }
 
-  let finalBody = (parsed.body || '').trim();
-
-  // Ensure compliance opt-out line
-  if (!finalBody.toLowerCase().includes('stop to unsubscribe')) {
-    finalBody += '\n\nReply STOP to unsubscribe.';
-  }
-
+  const finalBody = ensureDefaultSignature(parsed.body || '');
   const wordCount = finalBody.split(/\s+/).filter(Boolean).length;
 
   return {

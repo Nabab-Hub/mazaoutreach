@@ -3,6 +3,7 @@ import { getLeads, updateLeadStatus } from '../firebase/leads';
 import { createDraft, getDrafts } from '../firebase/drafts';
 import { getSuppressionEntries } from '../firebase/suppression';
 import { aiRouter } from '../ai/router';
+import { ensureDefaultSignature, DEFAULT_EMAIL_SIGNATURE, COMPLIANCE_OPT_OUT } from '../templates/signature';
 
 export interface FollowUpCandidate {
   lead: Lead;
@@ -129,10 +130,9 @@ To give you a concrete idea: for a similar ${niche} business, we set up an autom
 
 Would you be open to a brief 10-minute call this Thursday or Friday to see if a similar setup makes sense for ${business}?
 
-Best regards,
-Alex Vance
+${DEFAULT_EMAIL_SIGNATURE}
 
-Reply STOP to unsubscribe.`;
+${COMPLIANCE_OPT_OUT}`;
     } else {
       subject = `Final check-in regarding ${business}`;
       body = `Hi ${firstName},
@@ -143,18 +143,19 @@ If you ever decide to revisit streamlining client bookings, digital check-ins, o
 
 Wishing you and the team at ${business} continued growth and success!
 
-Best regards,
-Alex Vance
+${DEFAULT_EMAIL_SIGNATURE}
 
-Reply STOP to unsubscribe.`;
+${COMPLIANCE_OPT_OUT}`;
     }
   }
+
+  const finalBody = ensureDefaultSignature(body);
 
   const draft = await createDraft({
     leadId: lead.id,
     type: followUpNumber === 1 ? 'followup_1' : 'followup_2',
     subject,
-    body,
+    body: finalBody,
     aiProvider,
     model: aiModel,
     status: 'pending',

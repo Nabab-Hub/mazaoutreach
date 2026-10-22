@@ -1,11 +1,22 @@
 import { aiRouter } from '../ai/router';
 import { ClassificationResult, Lead } from '../types';
+import { ensureDefaultSignature, DEFAULT_EMAIL_SIGNATURE } from '../templates/signature';
 
 export const SYSTEM_REPLY_DRAFTER_PROMPT = `Draft a polite, concise reply to a prospect. 
 Answer only what you know from the service list (web apps, mobile apps, SaaS, APIs, chatbots, custom ML automations). 
 Never quote prices or deadlines; suggest a short introductory call using this calendar link: {calendarLink}. 
 If the lead is not interested, thank them in one polite line and close.
 If the lead asks to unsubscribe, acknowledge courteously.
+
+Every email must end with the sender signature block:
+Best regards,
+Sk Ahidulla
++918609720621
+skahidulla568@gmail.com
+[Youtube](https://youtube.com/@codingkamaza)
+[Website](https://www.codingkamaza.in)
+
+Reply STOP to unsubscribe.
 
 Return strictly valid JSON:
 {
@@ -26,14 +37,14 @@ export async function draftReplyToProspect(opts: {
     opts.calendarLink ||
     process.env.NEXT_PUBLIC_BOOKING_URL ||
     process.env.CALENDAR_BOOKING_LINK ||
-    'https://cal.com/alexvance/10min';
+    'https://cal.com/skahidulla/10min';
 
   // Fast-path for not interested
   if (classification.classification === 'not_interested') {
     const firstName = lead.name ? lead.name.split(' ')[0] : 'there';
     return {
       subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
-      body: `Hi ${firstName},\n\nThank you for letting me know! Wishing you and ${lead.businessName} continued success.\n\nBest regards,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+      body: ensureDefaultSignature(`Hi ${firstName},\n\nThank you for letting me know! Wishing you and ${lead.businessName} continued success.`),
     };
   }
 
@@ -41,7 +52,7 @@ export async function draftReplyToProspect(opts: {
   if (classification.classification === 'unsubscribe') {
     return {
       subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
-      body: `You have been removed from our outreach list. We apologize for any inconvenience.\n\nBest regards,\nAlex Vance`,
+      body: `You have been removed from our outreach list. We apologize for any inconvenience.\n\n${DEFAULT_EMAIL_SIGNATURE}`,
     };
   }
 
@@ -83,11 +94,7 @@ Draft the reply adhering to the rules.`;
     const cleaned = res.text.replace(/```json\s*/gi, '').replace(/```\s*$/gi, '').trim();
     const parsed = JSON.parse(cleaned);
 
-    let body = parsed.body || '';
-    if (!body.toLowerCase().includes('stop to unsubscribe')) {
-      body += '\n\nReply STOP to unsubscribe.';
-    }
-
+    const body = ensureDefaultSignature(parsed.body || '');
     const subject = parsed.subject || (replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`);
 
     return { subject, body };
@@ -96,7 +103,7 @@ Draft the reply adhering to the rules.`;
     const firstName = lead.name ? lead.name.split(' ')[0] : 'there';
     return {
       subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
-      body: `Hi ${firstName},\n\nThanks for getting back to me! I'd love to learn more about ${lead.businessName} and explore how we can tailor this for your team.\n\nWould you be open to picking a quick 10-15 minute slot here?\n${calendarLink}\n\nLooking forward to speaking!\n\nBest regards,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+      body: ensureDefaultSignature(`Hi ${firstName},\n\nThanks for getting back to me! I'd love to learn more about ${lead.businessName} and explore how we can tailor this for your team.\n\nWould you be open to picking a quick 10-15 minute slot here?\n${calendarLink}\n\nLooking forward to speaking!`),
     };
   }
 }

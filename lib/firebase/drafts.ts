@@ -2,6 +2,7 @@ import { Draft, Lead, LearningExample, LeadNiche } from '../types';
 import { getAdminDb } from './admin';
 import { getLeads, updateLeadStatus } from './leads';
 import { generatePersonalizedDraft } from '../agents/personalize';
+import { DEFAULT_EMAIL_SIGNATURE, COMPLIANCE_OPT_OUT, ensureDefaultSignature } from '../templates/signature';
 
 // In-memory demo drafts attached to globalThis for consistent state across Next.js API routes
 const globalForDrafts = globalThis as unknown as {
@@ -17,7 +18,7 @@ const DEMO_DRAFTS: Draft[] = [
     leadId: 'lead-1',
     type: 'initial',
     subject: 'Automating member bookings & check-ins for Apex Fitness Club',
-    body: `Hi Aarav,\n\nI was looking into premier fitness and training clubs in Mumbai and came across Apex Fitness Club.\n\nAs a software developer specializing in digital member management, I noticed how clubs often spend 15+ hours weekly answering manual slot bookings and tracking membership renewals over WhatsApp.\n\nI recently deployed an automated class booking portal and digital QR check-in flow that freed up 3 hours daily for front-desk staff while lifting class attendance by 28%.\n\nAre you open to a brief 10-minute introductory call this Thursday to explore if this would be helpful for Apex?\n\nBest regards,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+    body: `Hi Aarav,\n\nI was looking into premier fitness and training clubs in Mumbai and came across Apex Fitness Club.\n\nAs a software developer specializing in digital member management, I noticed how clubs often spend 15+ hours weekly answering manual slot bookings and tracking membership renewals over WhatsApp.\n\nI recently deployed an automated class booking portal and digital QR check-in flow that freed up 3 hours daily for front-desk staff while lifting class attendance by 28%.\n\nAre you open to a brief 10-minute introductory call this Thursday to explore if this would be helpful for Apex?\n\n${DEFAULT_EMAIL_SIGNATURE}\n\n${COMPLIANCE_OPT_OUT}`,
     aiProvider: 'gemini',
     model: 'gemini-1.5-flash',
     status: 'pending',
@@ -31,7 +32,7 @@ const DEMO_DRAFTS: Draft[] = [
     leadId: 'lead-5',
     type: 'initial',
     subject: 'Next.js engineering velocity & API integrations for Zenith AI',
-    body: `Hi Vikram,\n\nI checked out Zenith AI recently and was impressed by your fast document processing engine.\n\nI'm a full-stack engineer specializing in Next.js 14, high-throughput Node.js microservices, and in-product chat interfaces. I partner with technical founders to knock out customer-requested integrations (like custom webhook exports and billing portals) without taking core engineers off deep model research.\n\nWould you have 10 minutes open this Friday for a quick introductory chat to explore if extra engineering bandwidth would be helpful for your upcoming sprint?\n\nCheers,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+    body: `Hi Vikram,\n\nI checked out Zenith AI recently and was impressed by your fast document processing engine.\n\nI'm a full-stack engineer specializing in Next.js 14, high-throughput Node.js microservices, and in-product chat interfaces. I partner with technical founders to knock out customer-requested integrations (like custom webhook exports and billing portals) without taking core engineers off deep model research.\n\nWould you have 10 minutes open this Friday for a quick introductory chat to explore if extra engineering bandwidth would be helpful for your upcoming sprint?\n\n${DEFAULT_EMAIL_SIGNATURE}\n\n${COMPLIANCE_OPT_OUT}`,
     aiProvider: 'openai',
     model: 'gpt-4o-mini',
     status: 'pending',
@@ -51,7 +52,7 @@ const DEMO_LEARNING_EXAMPLES: LearningExample[] = [
     originalSubject: 'Gym software for IronGym',
     originalBody: 'Hi, do you need software for gym memberships? We make apps for gyms.',
     approvedSubject: 'Streamlining member check-ins and renewals for IronGym',
-    approvedBody: `Hi Rohit,\n\nI came across IronGym and loved your community-first approach to functional fitness.\n\nI build lightweight member check-in portals and automated renewal reminders for fitness facilities. For a similar gym in Bandra, this cut membership lapse by 25% without requiring complex software setups.\n\nWould you be open to a quick 10-minute chat this week?\n\nBest,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+    approvedBody: `Hi Rohit,\n\nI came across IronGym and loved your community-first approach to functional fitness.\n\nI build lightweight member check-in portals and automated renewal reminders for fitness facilities. For a similar gym in Bandra, this cut membership lapse by 25% without requiring complex software setups.\n\nWould you be open to a quick 10-minute chat this week?\n\n${DEFAULT_EMAIL_SIGNATURE}\n\n${COMPLIANCE_OPT_OUT}`,
     wasEdited: true,
     createdAt: new Date(Date.now() - 3600000 * 24 * 5).toISOString(),
   },
@@ -101,6 +102,8 @@ export async function getDrafts(filter?: {
 
   drafts = drafts.map((d) => ({
     ...d,
+    body: ensureDefaultSignature(d.body),
+    editedBody: d.editedBody ? ensureDefaultSignature(d.editedBody) : undefined,
     lead: leadsMap.get(d.leadId),
   }));
 
@@ -137,11 +140,13 @@ export async function getDraftById(id: string): Promise<Draft | null> {
 
 export async function createDraft(data: Omit<Draft, 'id' | 'createdAt'>): Promise<Draft> {
   const db = getAdminDb();
+  const sanitizedBody = ensureDefaultSignature(data.body);
   const newDraft: Draft = {
     ...data,
+    body: sanitizedBody,
     id: `draft-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
     createdAt: new Date().toISOString(),
-    wordCount: data.body.split(/\s+/).filter(Boolean).length,
+    wordCount: sanitizedBody.split(/\s+/).filter(Boolean).length,
   };
 
   if (db) {

@@ -1,4 +1,5 @@
 import { AIProvider, AIProviderOptions } from './provider';
+import { DEFAULT_EMAIL_SIGNATURE, COMPLIANCE_OPT_OUT } from '../templates/signature';
 
 export class MockAIProvider implements AIProvider {
   name = 'mock' as const;
@@ -59,19 +60,19 @@ export class MockAIProvider implements AIProvider {
         const name = nameMatch ? nameMatch[1].trim() : 'there';
         const firstName = name.split(' ')[0] || 'there';
         const business = bizMatch ? bizMatch[1].trim() : 'your business';
-        const calendarLink = linkMatch ? linkMatch[1].trim() : 'https://cal.com/alexvance/10min';
+        const calendarLink = linkMatch ? linkMatch[1].trim() : 'https://cal.com/skahidulla/10min';
         const category = (catMatch ? catMatch[1].trim() : 'interested').toLowerCase();
 
         if (category === 'not_interested') {
           return JSON.stringify({
             subject: 'Re: Follow up',
-            body: `Hi ${firstName},\n\nThank you for letting me know! Wishing you and ${business} continued success.\n\nBest regards,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+            body: `Hi ${firstName},\n\nThank you for letting me know! Wishing you and ${business} continued success.\n\nBest regards,\nSk Ahidulla\n+918609720621\nskahidulla568@gmail.com\n[Youtube](https://youtube.com/@codingkamaza)\n[Website](https://www.codingkamaza.in)\n\nReply STOP to unsubscribe.`,
           });
         }
 
         return JSON.stringify({
           subject: 'Re: Follow up',
-          body: `Hi ${firstName},\n\nThanks for getting back to me! I would be delighted to connect and explore how we can tailor this for ${business}.\n\nFeel free to pick any 10-15 minute slot that suits your schedule using my calendar link below:\n${calendarLink}\n\nLooking forward to speaking!\n\nBest regards,\nAlex Vance\n\nReply STOP to unsubscribe.`,
+          body: `Hi ${firstName},\n\nThanks for getting back to me! I would be delighted to connect and explore how we can tailor this for ${business}.\n\nFeel free to pick any 10-15 minute slot that suits your schedule using my calendar link below:\n${calendarLink}\n\nLooking forward to speaking!\n\nBest regards,\nSk Ahidulla\n+918609720621\nskahidulla568@gmail.com\n[Youtube](https://youtube.com/@codingkamaza)\n[Website](https://www.codingkamaza.in)\n\nReply STOP to unsubscribe.`,
         });
       }
 
@@ -159,10 +160,9 @@ In similar implementations, this helped save 10+ hours of manual administration 
 
 Are you open to a brief 10-minute introductory call this Thursday or Friday to explore if this would be valuable for ${business}?
 
-Best regards,
-Outreach Partner
+${DEFAULT_EMAIL_SIGNATURE}
 
-Reply STOP to unsubscribe.`;
+${COMPLIANCE_OPT_OUT}`;
 
       const wordCount = body.trim().split(/\s+/).length;
 

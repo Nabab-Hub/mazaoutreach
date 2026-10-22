@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       const mockAccount: EmailAccount = {
         id: `acct-${Date.now()}`,
         gmailAddress: `studio.founder${randomSuffix}@gmail.com`,
-        displayName: `Alex Vance (Account #${randomSuffix})`,
+        displayName: `Sk Ahidulla (Account #${randomSuffix})`,
         encryptedRefreshToken: encryptToken(`mock_refresh_token_${randomSuffix}`),
         dailyLimit: 25,
         sentToday: 0,

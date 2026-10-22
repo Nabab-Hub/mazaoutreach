@@ -8,8 +8,8 @@ const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 const DEMO_ACCOUNTS: EmailAccount[] = [
   {
     id: 'acct-1',
-    gmailAddress: 'alex.consulting@gmail.com',
-    displayName: 'Alex Vance (Primary Consult)',
+    gmailAddress: 'skahidulla568@gmail.com',
+    displayName: 'Sk Ahidulla (Primary Consult)',
     encryptedRefreshToken: encryptToken('mock_refresh_token_acct_1'),
     dailyLimit: 30,
     sentToday: 12,
@@ -20,8 +20,8 @@ const DEMO_ACCOUNTS: EmailAccount[] = [
   },
   {
     id: 'acct-2',
-    gmailAddress: 'alex.techlead@gmail.com',
-    displayName: 'Alex Vance (Tech Lead)',
+    gmailAddress: 'skahidulla.dev@gmail.com',
+    displayName: 'Sk Ahidulla (Tech Lead)',
     encryptedRefreshToken: encryptToken('mock_refresh_token_acct_2'),
     dailyLimit: 25,
     sentToday: 8,

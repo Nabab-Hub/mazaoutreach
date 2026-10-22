@@ -4,6 +4,7 @@ import { refreshAccessToken } from './oauth';
 import { incrementAccountSent, recordAccountError } from '../firebase/accounts';
 import { getSuppressedEmails, updateLeadStatus } from '../firebase/leads';
 import { getAdminDb } from '../firebase/admin';
+import { ensureDefaultSignature } from '../templates/signature';
 
 // In-memory demo store for sent emails
 let mockSentEmails: SentEmail[] = [
@@ -109,7 +110,7 @@ export async function sendOutreachEmail(opts: {
   }
 
   const subjectToSend = (draft.editedSubject || draft.subject).trim();
-  const bodyToSend = (draft.editedBody || draft.body).trim();
+  const bodyToSend = ensureDefaultSignature(draft.editedBody || draft.body);
 
   let messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
   let threadId = `th_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
@@ -125,7 +126,7 @@ export async function sendOutreachEmail(opts: {
       const accessToken = await refreshAccessToken(account.encryptedRefreshToken);
       const rawBase64Url = buildRawRfc2822Message({
         from: account.gmailAddress,
-        fromName: account.displayName || 'Freelance Systems Architect',
+        fromName: account.displayName || 'Sk Ahidulla',
         to: lead.email,
         subject: subjectToSend,
         body: bodyToSend,
