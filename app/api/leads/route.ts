@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchAllLeads, updateLeadStatus, deleteLead, deleteMultipleLeads, fetchBatches } from '@/lib/firebase/leads';
+import { fetchAllLeads, updateLeadStatus, updateLead, deleteLead, deleteMultipleLeads, fetchBatches } from '@/lib/firebase/leads';
 import { LeadNiche, LeadStatus } from '@/lib/types';
 
 export async function GET(req: NextRequest) {
@@ -41,18 +41,26 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, status } = body;
+    const { id, status, updates } = body;
 
-    if (!id || !status) {
-      return NextResponse.json({ error: 'Missing lead id or status' }, { status: 400 });
+    if (!id) {
+      return NextResponse.json({ error: 'Missing lead id' }, { status: 400 });
     }
 
-    const success = await updateLeadStatus(id, status as LeadStatus);
+    let success = false;
+    if (updates && typeof updates === 'object') {
+      success = await updateLead(id, updates);
+    } else if (status) {
+      success = await updateLeadStatus(id, status as LeadStatus);
+    } else {
+      return NextResponse.json({ error: 'Missing status or updates payload' }, { status: 400 });
+    }
+
     if (!success) {
       return NextResponse.json({ error: 'Lead not found or update failed' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, id, status });
+    return NextResponse.json({ success: true, id, status, updates });
   } catch (error: any) {
     console.error('Leads PATCH Error:', error);
     return NextResponse.json(

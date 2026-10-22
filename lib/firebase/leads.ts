@@ -294,6 +294,35 @@ export async function updateLeadStatus(id: string, status: LeadStatus): Promise<
   return false;
 }
 
+export async function updateLead(id: string, updates: Partial<Lead>): Promise<boolean> {
+  const db = getAdminDb();
+  const cleaned = cleanDoc({
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  });
+
+  if (db) {
+    try {
+      await db.collection('leads').doc(id).update(cleaned);
+      return true;
+    } catch (e) {
+      console.warn('Failed to update lead in Firestore:', e);
+    }
+  }
+
+  mockLeads = globalForLeads.__mockLeads || mockLeads;
+  const idx = mockLeads.findIndex((l) => l.id === id);
+  if (idx !== -1) {
+    mockLeads[idx] = {
+      ...mockLeads[idx],
+      ...cleaned,
+    };
+    globalForLeads.__mockLeads = mockLeads;
+    return true;
+  }
+  return false;
+}
+
 export async function deleteLead(id: string): Promise<boolean> {
   const db = getAdminDb();
   if (db) {

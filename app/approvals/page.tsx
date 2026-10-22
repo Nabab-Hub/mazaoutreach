@@ -17,6 +17,7 @@ import {
   Search,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   Sliders,
   ChevronDown,
@@ -24,6 +25,7 @@ import {
   ArrowRight,
   Bot,
   Zap,
+  Clock,
 } from 'lucide-react';
 import { Draft, LeadNiche } from '@/lib/types';
 
@@ -53,7 +55,8 @@ export default function ApprovalsPage() {
   const [isSubmittingRegen, setIsSubmittingRegen] = useState(false);
 
   // Status message
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error' | 'warning'; message: string } | null>(null);
+  const [checkingFollowUps, setCheckingFollowUps] = useState(false);
 
   const fetchDrafts = async () => {
     setLoading(true);
@@ -84,9 +87,9 @@ export default function ApprovalsPage() {
     fetchDrafts();
   };
 
-  const showToast = (type: 'success' | 'error', message: string) => {
+  const showToast = (type: 'success' | 'error' | 'warning', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 4000);
+    setTimeout(() => setNotification(null), 5000);
   };
 
   // Generate drafts for new leads
@@ -102,7 +105,7 @@ export default function ApprovalsPage() {
       const data = await res.json();
       if (data.success) {
         if (data.generated > 0) {
-          showToast('success', `Generated ${data.generated} personalized drafts successfully!`);
+          showToast('success', data.message || `Generated ${data.generated} personalized drafts successfully!`);
         } else {
           showToast('success', data.message || 'All current leads already have drafts.');
         }
@@ -118,7 +121,33 @@ export default function ApprovalsPage() {
     }
   };
 
-  // Approve a single draft
+  // Check and generate due follow-ups (2-3+ days no reply)
+  const handleCheckFollowUps = async () => {
+    setCheckingFollowUps(true);
+    try {
+      const res = await fetch('/api/followups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'run_cycle' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(
+          'success',
+          data.message || `Follow-up cycle checked.`
+        );
+        fetchDrafts();
+      } else {
+        showToast('error', data.error || 'Failed to process follow-ups');
+      }
+    } catch (err: any) {
+      showToast('error', err.message || 'Follow-up request failed');
+    } finally {
+      setCheckingFollowUps(false);
+    }
+  };
+
+  // Approve a single draft & SEND IMMEDIATELY
   const handleApprove = async (draftId: string, subject?: string, body?: string) => {
     setActionDraftId(draftId);
     setActionType('approve');
@@ -131,11 +160,21 @@ export default function ApprovalsPage() {
           draftId,
           editedSubject: subject,
           editedBody: body,
+          sendNow: true,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast('success', 'Draft approved & queued for sending!');
+        if (data.sent) {
+          showToast(
+            'success',
+            `Email sent successfully via ${data.sendResult?.accountUsed || 'Gmail'}!`
+          );
+        } else if (data.warning) {
+          showToast('warning', data.warning);
+        } else {
+          showToast('success', 'Draft approved & queued for sending!');
+        }
         setEditingDraftId(null);
         fetchDrafts();
       } else {
@@ -216,11 +255,18 @@ export default function ApprovalsPage() {
         body: JSON.stringify({
           action: 'bulk_approve',
           draftIds: selectedDraftIds,
+          sendNow: true,
         }),
       });
       const data = await res.json();
       if (data.success) {
-        showToast('success', `Approved ${data.approvedCount} drafts!`);
+        if (data.sentCount > 0 && !data.warning) {
+          showToast('success', `Approved and sent ${data.sentCount} emails successfully!`);
+        } else if (data.warning) {
+          showToast('warning', data.warning);
+        } else {
+          showToast('success', `Approved ${data.approvedCount} drafts!`);
+        }
         setSelectedDraftIds([]);
         fetchDrafts();
       } else {
@@ -261,14 +307,18 @@ export default function ApprovalsPage() {
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-xl flex items-center gap-3 transition-all ${
+          className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-xl flex items-center gap-3 transition-all max-w-md ${
             notification.type === 'success'
               ? 'bg-emerald-950/90 text-emerald-200 border-emerald-500/40'
+              : notification.type === 'warning'
+              ? 'bg-amber-950/90 text-amber-200 border-amber-500/40'
               : 'bg-rose-950/90 text-rose-200 border-rose-500/40'
           }`}
         >
           {notification.type === 'success' ? (
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          ) : notification.type === 'warning' ? (
+            <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
           ) : (
             <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
           )}
@@ -296,7 +346,7 @@ export default function ApprovalsPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => handleBatchGenerate(false)}
-            disabled={generating}
+            disabled={generating || checkingFollowUps}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium text-xs shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
             title="Generate AI drafts for newly added leads"
           >
@@ -309,15 +359,17 @@ export default function ApprovalsPage() {
           </button>
 
           <button
-            onClick={() => handleBatchGenerate(true)}
-            disabled={generating}
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white text-xs font-medium transition-all disabled:opacity-50"
-            title="Generate fresh personalized drafts for all leads in the database"
+            onClick={handleCheckFollowUps}
+            disabled={checkingFollowUps || generating}
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 border border-indigo-900/60 hover:border-indigo-500/80 text-indigo-300 hover:text-white text-xs font-medium transition-all disabled:opacity-50 shadow-sm"
+            title="Scan for contacted leads who have not replied in 2-3+ days and draft follow-up emails"
           >
-            {generating && batchMode === 'all' && (
+            {checkingFollowUps ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+            ) : (
+              <Clock className="w-3.5 h-3.5 text-indigo-400" />
             )}
-            <span>{generating && batchMode === 'all' ? 'Drafting All Leads...' : 'Draft for All Leads'}</span>
+            <span>{checkingFollowUps ? 'Checking Follow-ups...' : 'Check Due Follow-ups (2-3d)'}</span>
           </button>
         </div>
       </div>

@@ -142,15 +142,21 @@ export async function sendOutreachEmail(opts: {
 
       if (!res.ok) {
         const errText = await res.text();
-        await recordAccountError(account.id, `Gmail API send failure [${res.status}]: ${errText}`);
-        throw new Error(`Gmail API error [${res.status}]: ${errText}`);
+        let friendlyMessage = `Gmail API error [${res.status}]: ${errText}`;
+        if (errText.includes('SERVICE_DISABLED') || errText.includes('Gmail API has not been used')) {
+          friendlyMessage = `Gmail API is disabled in your Google Cloud Project. Enable it at: https://console.developers.google.com/apis/api/gmail.googleapis.com/overview?project=535309342019 then resume your account in Accounts page.`;
+        }
+        await recordAccountError(account.id, friendlyMessage);
+        throw new Error(friendlyMessage);
       }
 
       const result = await res.json();
       messageId = result.id;
       threadId = result.threadId;
     } catch (err: any) {
-      await recordAccountError(account.id, err.message);
+      if (!err.message?.includes('Gmail API is disabled')) {
+        await recordAccountError(account.id, err.message);
+      }
       throw err;
     }
   }
@@ -182,8 +188,10 @@ export async function sendOutreachEmail(opts: {
     }
   }
 
-  // 5. Update Lead Status & Sticky Account Assignment
+  // 5. Update Lead Status, Follow-Up Count & Sticky Account Assignment
   await updateLeadStatus(lead.id, 'contacted');
+
+  const newFollowUpCount = draft.type === 'followup_1' ? 1 : (draft.type === 'followup_2' ? 2 : (lead.followUpCount || 0));
 
   if (db && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
     try {
@@ -191,11 +199,19 @@ export async function sendOutreachEmail(opts: {
         status: 'contacted',
         assignedGmailId: account.id,
         lastContactedAt: sentRecord.sentAt,
+        followUpCount: newFollowUpCount,
+        updatedAt: sentRecord.sentAt,
       });
     } catch (e) {
       console.warn('[GmailSend] Failed to update lead in Firestore:', e);
     }
   }
+
+  // Keep in-memory lead updated
+  lead.status = 'contacted';
+  lead.assignedGmailId = account.id;
+  lead.lastContactedAt = sentRecord.sentAt;
+  lead.followUpCount = newFollowUpCount;
 
   // 6. Increment Account Usage Counter
   await incrementAccountSent(account.id);
@@ -211,6 +227,9 @@ export async function sendOutreachEmail(opts: {
       console.warn('[GmailSend] Failed to update draft status:', e);
     }
   }
+
+  draft.status = 'sent';
+  draft.updatedAt = sentRecord.sentAt;
 
   return {
     success: true,
