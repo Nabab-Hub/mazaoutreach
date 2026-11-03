@@ -33,7 +33,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 GROK_API_KEY = os.getenv("GROK_API_KEY", "")
 
 DEFAULT_LLM_PROVIDER = os.getenv("DEFAULT_LLM_PROVIDER", "gemini")
-DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gemini-1.5-flash")
+DEFAULT_LLM_MODEL = os.getenv("DEFAULT_LLM_MODEL", "gemini-3.7-flash")
 
 # Telegram Notifications
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -46,7 +46,7 @@ SENDER_PHONE = os.getenv("SENDER_PHONE", "+91 86097 20621")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "skahidulla568@gmail.com")
 SENDER_WEBSITE = os.getenv("SENDER_WEBSITE", "https://www.codingkamaza.in")
 SENDER_YOUTUBE = os.getenv("SENDER_YOUTUBE", "https://youtube.com/@codingkamaza")
-CALENDAR_BOOKING_LINK = os.getenv("CALENDAR_BOOKING_LINK", "https://cal.com/skahidulla/10min")
+CALENDAR_BOOKING_LINK = os.getenv("CALENDAR_BOOKING_LINK", "https://calendly.com/gandfadexperiments/30min")
 
 AGENTIC_MODE = os.getenv("AGENTIC_MODE", "live")
 
