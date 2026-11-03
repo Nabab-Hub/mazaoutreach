@@ -1,8 +1,6 @@
+import _setup_path
 import sys
-from pathlib import Path
 from typing import Dict, Any
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -99,4 +97,3 @@ if __name__ == "__main__":
     import uvicorn
     print(f"Starting Agentic AI FastAPI Server on port 8000...")
     uvicorn.run(app, host="0.0.0.0", port=8000)
-

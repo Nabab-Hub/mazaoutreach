@@ -1,13 +1,6 @@
+import _setup_path
 import sys
 import json
-from pathlib import Path
-
-# Ensure UTF-8 output on Windows consoles
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-
-# Ensure root workspace is in sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline
 from agentic_ai import config
