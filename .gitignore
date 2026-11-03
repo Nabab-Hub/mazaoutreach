@@ -24,10 +24,13 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local
+config.bat
 
 # vercel
 .vercel
@@ -35,4 +38,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-config.bat
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+agentic_ai
