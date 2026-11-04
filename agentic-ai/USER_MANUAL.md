@@ -1,69 +1,247 @@
 # 📘 Agentic AI Multi-Agent System — Complete User Manual
 
-Welcome! This directory (`agentic-ai/`) contains a production-ready, autonomous Multi-Agent Client Outreach and Inbound Reply Handling engine built with **LangChain**, **LangGraph**, and **LangSmith**.
+Welcome! The `agentic-ai/` directory contains an enterprise-grade, autonomous Multi-Agent Client Outreach, Follow-up, and Inbound Reply Handling engine built with **LangChain**, **LangGraph**, and **LangSmith**.
+
+This guide covers all **Features** of the system and provides a step-by-step **How-to-Use** walkthrough for command-line runs, automated background workflows, and REST API integration.
 
 ---
 
 ## 📑 Table of Contents
-1. [System Architecture & Agent Roles](#1-system-architecture--agent-roles)
-2. [Environment Setup & Configuration](#2-environment-setup--configuration)
-3. [Running the Agents via Command Line (CLI)](#3-running-the-agents-via-command-line-cli)
-4. [Live Tracing & Observability in LangSmith](#4-live-tracing--observability-in-langsmith)
-5. [Telegram Alerts & Autonomous Reply Workflows](#5-telegram-alerts--autonomous-reply-workflows)
-6. [Anti-Spam Deliverability & Top Unsubscribe System](#6-anti-spam-deliverability--top-unsubscribe-system)
-7. [FastAPI Microservice Integration](#7-fastapi-microservice-integration)
-8. [Troubleshooting & Common FAQs](#8-troubleshooting--common-faqs)
+1. [🌟 Core Features Overview](#1--core-features-overview)
+2. [🤖 Specialized Agent Ecosystem](#2--specialized-agent-ecosystem)
+3. [🚀 Step-by-Step: How to Use](#3--step-by-step-how-to-use)
+   - [Method 1: Direct Command-Line CLI Testing](#method-1-direct-command-line-cli-testing)
+   - [Method 2: Interactive FastAPI Web Microservice](#method-2-interactive-fastapi-web-microservice)
+   - [Method 3: Automated LangSmith Benchmarking](#method-3-automated-langsmith-benchmarking)
+4. [🛡️ Zero-Downtime Multi-Tier LLM Fallback Cascade](#4-️-zero-downtime-multi-tier-llm-fallback-cascade)
+5. [📬 100% Primary Inbox Anti-Spam & Deliverability System](#5--100-primary-inbox-anti-spam--deliverability-system)
+6. [📱 Instant Telegram Alerts for Hot Leads](#6--instant-telegram-alerts-for-hot-leads)
+7. [🔍 Real-Time Observability & Monitoring with LangSmith](#7--real-time-observability--monitoring-with-langsmith)
+8. [⚙️ Environment Configuration Reference](#8-️-environment-configuration-reference)
+9. [❓ Frequently Asked Questions & Troubleshooting](#9--frequently-asked-questions--troubleshooting)
 
 ---
 
-## 1. System Architecture & Agent Roles
+## 1. 🌟 Core Features Overview
 
-The system is coordinated by LangGraph's `StateGraph`, connecting five specialized agents into an event-driven pipeline:
+| Feature | Description |
+|---|---|
+| **Autonomous Multi-Agent Pipeline** | Uses LangGraph `StateGraph` to orchestrate 5 specialized AI agents working together as a coordinated sales development team. |
+| **Deep Company Research** | Analyzes prospect websites, company descriptions, and industry niches to uncover specific, high-leverage software bottlenecks. |
+| **1-to-1 Conversational Copywriting** | Replaces generic templates with authentic, 80–130 word personalized cold emails written on behalf of full-stack developer Sk Ahidulla. |
+| **Automated Anti-Spam Scoring** | Real-time scanner flags deliverability hazards, hype keywords, uppercase subject lines, or spam triggers, ensuring a 0.0 spam score. |
+| **Top Unsubscribe Header** | Places an unmissable opt-out bar at the top of every email meeting RFC 2369 / RFC 8058 compliance rules for Google and Yahoo. |
+| **Inbound Reply Classification** | Classifies incoming replies into 7 categories (`interested`, `question`, `meeting_booked`, `not_interested`, `unsubscribe`, `out_of_office`, `other`). |
+| **Real-Time Telegram Alerts** | Sends instantaneous push notifications to your Telegram when an interested lead asks for pricing, demo, or scheduling. |
+| **Autonomous Reply & Booking** | Automatically drafts and dispatches friendly replies with your Calendly booking link for hot leads. |
+| **Smart Suppression & Opt-out** | Instantly silences outreach to unsubscribed leads to preserve sender domain reputation. |
+| **Zero-Downtime LLM Cascade** | If Gemini 3.7 hits Google's free-tier daily cap (429), it automatically fails over to Gemini 3.5, Gemini 3.1 Lite, and Groq with 0 seconds downtime. |
+| **End-to-End Tracing with LangSmith** | Every agent action, prompt, output token, latency metric, and execution graph is logged to LangSmith. |
+| **FastAPI REST API Ready** | Includes ready-to-use endpoints for `/api/v1/outreach`, `/api/v1/reply`, and `/api/v1/followup`. |
+
+---
+
+## 2. 🤖 Specialized Agent Ecosystem
+
+The system operates as an event-driven LangGraph workflow:
 
 ```mermaid
 flowchart TD
-    A[Prospect Lead Ingestion] --> B[Suppression Gate]
-    B -->|Eligible| C[Research Agent]
-    B -->|Suppressed| End1([Halt / Skipped])
-    C --> D[Copywriter Agent]
-    D --> E[Anti-Spam & Deliverability Analyzer]
-    E --> F{Human Approval Gate}
-    F -->|Approved| G[Dispatch Engine]
-    F -->|Review Flagged| Review([Approval Queue])
-    G --> H[Follow-Up Agent Sequence]
+    Lead([Incoming Lead]) --> SuppCheck[Suppression Check Gate]
+    SuppCheck -->|Suppressed| Stop([Halt / Opted Out])
+    SuppCheck -->|Active| ResearchAgent[1. Research Agent]
+    ResearchAgent --> CopyAgent[2. Copywriter Agent]
+    CopyAgent --> SpamTool[Anti-Spam & Deliverability Analyzer]
+    SpamTool --> ApprovalGate{Confidence & Spam Check}
+    ApprovalGate -->|Safe / High Score| DispatchNode[Email Dispatcher]
+    ApprovalGate -->|Needs Review| FlagReview([Approval Queue])
+    DispatchNode --> FollowupAgent[3. Follow-Up Agent Sequence]
 
-    I[Prospect Inbound Reply] --> J[Classifier Agent]
-    J --> K{Intent Category}
-    K -->|Interested / Question| L[Instant Telegram Alert]
-    L --> M[Reply Agent]
-    M --> N[Send Calendar Link & Answer]
-    K -->|Unsubscribe / Not Interested| O[Auto Suppression List]
-    O --> P[Polite Signoff & Close]
+    Inbound([Inbound Prospect Reply]) --> ClassifyAgent[4. Classifier Agent]
+    ClassifyAgent --> IntentBranch{Intent Category}
+    IntentBranch -->|Interested / Question| TeleAlert[Telegram Alert Dispatcher]
+    TeleAlert --> ReplyAgent[5. Reply Agent]
+    ReplyAgent --> SendCal[Send Calendly Booking Link]
+    IntentBranch -->|Unsubscribe / Not Interested| Suppress[Add to Suppression List]
+    Suppress --> CloseOut[Polite Signoff]
 ```
 
-### Specialized Agents Overview:
+### Agent Roles:
 1. **Research Agent (`agents/research_agent.py`):**
-   - Analyzes prospect business name, niche, company description, and website.
-   - Identifies high-value software engineering pain points (e.g., manual customer onboarding, lack of automated booking, legacy tech stack) tailored to Sk Ahidulla's freelance services.
+   Examines lead metadata (company description, niche, city, website) and extracts 1–3 realistic software/tech gaps and growth opportunities.
 2. **Copywriter Agent (`agents/copywriter_agent.py`):**
-   - Writes concise, 80–130 word, 1-to-1 natural cold emails on behalf of Sk Ahidulla (Full-Stack Engineer & Automation Specialist).
-   - Strictly enforces anti-spam heuristics (zero hype words, no exclamation marks, conversational subject line).
-3. **Follow-Up Agent (`agents/followup_agent.py`):**
-   - Sequences Follow-Up #1 (after 3 days) and Follow-Up #2 (after 7 days).
-   - Politely references the previous outreach context, introduces a relevant case study, and provides a low-friction invitation for a 10-minute call.
-4. **Classifier Agent (`agents/classifier_agent.py`):**
-   - Analyzes incoming client replies and extracts intent, sentiment, urgency, and categorization (`interested`, `question`, `meeting_booked`, `not_interested`, `unsubscribe`, `out_of_office`).
-5. **Reply Agent (`agents/reply_agent.py`):**
-   - When a prospect is interested, generates an enthusiastic response with the Calendly booking link and triggers a real-time Telegram alert.
-   - When an opt-out is detected, automatically adds the email to the suppression list and confirms removal politely.
+   Crafts concise, friendly 80–130 word cold outreach pitching Sk Ahidulla's modern web (Next.js), mobile (Flutter), and AI automation skills.
+3. **Classifier Agent (`agents/classifier_agent.py`):**
+   Classifies inbound replies by intent, urgency, sentiment, and confidence with structured JSON output.
+4. **Reply Agent (`agents/reply_agent.py`):**
+   Formulates appropriate next actions (sending Calendly link, answering questions, or updating the suppression list).
+5. **Follow-Up Agent (`agents/followup_agent.py`):**
+   Builds context-aware Follow-Up #1 (after 3 days) and Follow-Up #2 (after 7 days) without aggressive pushiness.
 
 ---
 
-## 2. Environment Setup & Configuration
+## 3. 🚀 Step-by-Step: How to Use
 
-File location: `agentic-ai/.env`
+### Method 1: Direct Command-Line CLI Testing
 
-Your environment is pre-configured with the following settings:
+Open your terminal in the workspace root directory:
+```powershell
+cd "c:\Users\skahi\Downloads\Client Handling Agentic AI"
+```
+
+#### Step 1: Run the Cold Outreach Engine
+```powershell
+python agentic-ai/run_outreach.py
+```
+**What happens:**
+1. Loads lead data (e.g. Dr. Rohit Sen, Apex Spine & Orthopedic Clinic).
+2. Verifies the lead is not on the suppression list.
+3. `ResearchAgent` pinpoints technical opportunities (e.g., automated appointment reminders, client web portal).
+4. `CopywriterAgent` writes a clean, conversational cold email.
+5. `analyze_email_spam_risk` checks deliverability (spam score: `0.0`).
+6. Renders HTML and plain-text versions with top unsubscribe links and professional signature block.
+
+#### Step 2: Run the Inbound Reply & Telegram Engine
+```powershell
+python agentic-ai/run_reply.py
+```
+**What happens:**
+1. Simulates an incoming prospect reply:
+   > *"Hi Sk, thanks for reaching out. Yes, we actually really need an automated WhatsApp reminder system and appointment portal. How much do you charge, and can we set up a quick 10 min call this Thursday afternoon?"*
+2. `ClassifierAgent` categorizes it as `INTERESTED` with `HIGH` urgency.
+3. Sends an immediate formatted alert to your Telegram:
+   ```text
+   🔥 HOT LEAD REPLY
+   From: Dr. Rohit Sen (Apex Spine & Orthopedic Clinic)
+   Email: dr.rohit@apexspinecare.com
+   Category: INTERESTED
+   ```
+4. `ReplyAgent` drafts an autonomous reply with your Calendly link (`https://calendly.com/gandfadexperiments/30min`).
+
+---
+
+### Method 2: Interactive FastAPI Web Microservice
+
+You can launch the FastAPI server to connect the Python multi-agent system to your Next.js dashboard, webhooks, or external tools:
+
+```powershell
+python agentic-ai/server.py
+```
+Server starts on **`http://localhost:8000`**.
+
+#### Available Endpoints:
+- **Interactive Swagger Documentation:** Open `http://localhost:8000/docs` in your browser.
+- **System Health:** `GET http://localhost:8000/health`
+- **Lead Outreach:** `POST http://localhost:8000/api/v1/outreach`
+- **Reply Processing:** `POST http://localhost:8000/api/v1/reply`
+- **Follow-up Generation:** `POST http://localhost:8000/api/v1/followup`
+
+#### Example: Triggering Outreach via cURL / PowerShell
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/outreach" -Method Post -ContentType "application/json" -Body '{
+  "id": "lead-101",
+  "name": "Sarah Connor",
+  "business_name": "SkyNet Tech Consult",
+  "email": "sarah@skynetconsult.io",
+  "niche": "saas",
+  "company_description": "Cloud migration and automated security monitoring service."
+}'
+```
+
+---
+
+### Method 3: Automated LangSmith Benchmarking
+
+To run automated quality and deliverability test assertions:
+```powershell
+python agentic-ai/evaluation/langsmith_eval.py
+```
+**Output:**
+```text
+[LangSmith] Starting evaluation run under project: client-handling-agentic-ai
+[*] Outreach Evaluation passed! Draft word count: 94, Spam score: 0.0
+[*] Reply Evaluation passed! Category: interested, Action: send_calendar
+[*] Check your traces at: https://api.smith.langchain.com -> Project 'client-handling-agentic-ai'
+```
+
+---
+
+## 4. 🛡️ Zero-Downtime Multi-Tier LLM Fallback Cascade
+
+The AI factory in [`models.py`](file:///c:/Users/skahi/Downloads/Client%20Handling%20Agentic%20AI/agentic-ai/models.py) implements a 4-tier automatic failover cascade:
+
+```mermaid
+flowchart LR
+    M1["Tier 1: Gemini 3.7 Flash<br/>(Target Model)"] -->|429 Quota Exceeded| M2["Tier 2: Gemini 3.5 Flash<br/>(High Daily Quota)"]
+    M2 -->|Unavailable| M3["Tier 3: Gemini 3.1 Flash-Lite<br/>(Ultra Fast)"]
+    M3 -->|Fallback| M4["Tier 4: Groq<br/>(openai/gpt-oss-120b)"]
+```
+
+- When Google Free Tier per-day quota on Gemini 3.7 is exhausted, the system **instantly shifts** to Gemini 3.5 Flash without manual intervention.
+- `max_retries=0` ensures that quota limits trigger instant fallback in milliseconds instead of freezing.
+
+---
+
+## 5. 📬 100% Primary Inbox Anti-Spam & Deliverability System
+
+Every cold email generated by the system is engineered to land in **Google and Yahoo Primary Inboxes**:
+
+1. **Top Unsubscribe Bar (RFC 2369 / RFC 8058):**
+   ```text
+   Direct Freelance Inquiry        [ Unsubscribe ] or reply STOP
+   ```
+2. **Strict Anti-Spam Trigger Filter:**
+   - Blocks trigger words: *Free, 100% Guarantee, Risk-Free, Urgent, Act Now, Buy Direct, $$$*.
+   - Blocks ALL CAPS words in subject lines.
+   - Blocks exclamation marks in subject lines.
+   - Enforces 80–130 word limits.
+3. **Clean Native Typography:**
+   - Zero marketing shadows, gradient badges, or promotional cards.
+   - Uses `#202124` text with standard clean spacing.
+4. **Professional Signature Block:**
+   - Includes Sk Ahidulla's verified contact details, portfolio (`codingkamaza.in`), and YouTube channel (`@codingkamaza`).
+
+---
+
+## 6. 📱 Instant Telegram Alerts for Hot Leads
+
+When an inbound reply is classified as `interested` or `question`, the system automatically sends a push notification to your Telegram chat:
+
+```text
+🔥 HOT LEAD REPLY
+
+From: Dr. Rohit Sen (Apex Spine & Orthopedic Clinic)
+Email: dr.rohit@apexspinecare.com
+Category: INTERESTED
+
+Message:
+"Hi Sk, thanks for reaching out. Yes, we actually really need an automated WhatsApp reminder system and appointment portal. How much do you charge, and can we set up a quick 10 min call this Thursday afternoon?"
+
+⚡ Agentic AI Response has been drafted and action dispatched.
+```
+
+All special characters (`<`, `>`, `&`) are escaped with `html.escape()` to prevent Telegram API parsing errors.
+
+---
+
+## 7. 🔍 Real-Time Observability & Monitoring with LangSmith
+
+Every pipeline execution streams real-time execution graphs to LangSmith:
+
+1. Open **[smith.langchain.com](https://smith.langchain.com)** in your browser.
+2. Select the project: **`client-handling-agentic-ai`**.
+3. View:
+   - Full LangGraph visual trace with every node transition.
+   - Detailed execution latency and timing per agent.
+   - Token counts and estimated generation cost.
+   - Full input/output inspection for audits.
+
+---
+
+## 8. ⚙️ Environment Configuration Reference
+
+Configuration file: `agentic-ai/.env`
+
 ```env
 # LangSmith Tracing & Observability
 LANGCHAIN_TRACING_V2=true
@@ -71,16 +249,18 @@ LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
 LANGCHAIN_API_KEY=your_langsmith_api_key_here
 LANGCHAIN_PROJECT=client-handling-agentic-ai
 
-# AI Models (Gemini 3.7 Flash with resilient auto-fallback to 3.8)
+# AI Models (Gemini 3.7 with resilient auto-fallbacks)
 DEFAULT_LLM_PROVIDER=gemini
 DEFAULT_LLM_MODEL=gemini-3.7-flash
 GEMINI_API_KEY=your_gemini_api_key_here
+GROK_API_KEY=your_groq_api_key_here
 
 # Telegram Instant Alerts
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 TELEGRAM_CHAT_ID=your_telegram_chat_id_here
+OWNER_EMAIL=skahidulla568@gmail.com
 
-# Freelancer Profile & Business Defaults
+# Freelancer Profile Settings
 SENDER_NAME="Sk Ahidulla"
 SENDER_TITLE="Full-Stack Engineer & Automation Specialist"
 SENDER_PHONE="+91 86097 20621"
@@ -92,120 +272,16 @@ CALENDAR_BOOKING_LINK="https://calendly.com/gandfadexperiments/30min"
 
 ---
 
-## 3. Running the Agents via Command Line (CLI)
+## 9. ❓ Frequently Asked Questions & Troubleshooting
 
-From your terminal in the workspace root directory (`Client Handling Agentic AI`):
-
-### A. Test Cold Outreach Pipeline:
-```powershell
-python agentic-ai/run_outreach.py
-```
-**What happens:**
-1. Checks if the lead is in the suppression list.
-2. `ResearchAgent` inspects the company description and finds technical pain points.
-3. `CopywriterAgent` drafts an 80–130 word personalized email.
-4. `analyze_email_spam_risk` validates a deliverability score of `0.0`.
-5. Formats the email with a **Top Unsubscribe Button** and Sk Ahidulla's signature block.
-6. Auto-approves and simulates sending.
-
-### B. Test Inbound Reply Handler & Telegram Alert:
-```powershell
-python agentic-ai/run_reply.py
-```
-**What happens:**
-1. Simulates an incoming email reply from an interested prospect.
-2. `ClassifierAgent` categorizes it as `INTERESTED` with high urgency.
-3. Dispatches an instant real-time notification to your **Telegram Bot**.
-4. `ReplyAgent` generates an autonomous response including your Calendly link (`https://calendly.com/gandfadexperiments/30min`).
-
-### C. Run LangSmith Automated Benchmark Evaluation:
-```powershell
-python agentic-ai/evaluation/langsmith_eval.py
-```
+| Question / Issue | Explanation & Fix |
+|---|---|
+| **What happens if Gemini 3.7 hits daily quota?** | The system automatically fails over to `gemini-3.5-flash` and `gemini-3.1-flash-lite`. Your outreach and reply processing never stop. |
+| **How do I change the Calendly link?** | Update `CALENDAR_BOOKING_LINK` in `agentic-ai/.env`. The Reply Agent will immediately use the new link. |
+| **How do I test without sending real emails?** | The default `send_email_outreach` tool simulates sending and logs the formatted message ID. To connect live Gmail or Google Workspace API, configure your Gmail OAuth in `gmail_tools.py`. |
+| **Can I run this from the Next.js app?** | Yes! Keep `python agentic-ai/server.py` running, and your frontend can call `POST http://localhost:8000/api/v1/outreach` or `/api/v1/reply`. |
+| **How do I verify deliverability score?** | Every generated email draft includes `spam_score` (target: `< 0.35`) and `spam_warnings`. High-risk emails are held in approval status `pending`. |
 
 ---
 
-## 4. Live Tracing & Observability in LangSmith
-
-Every execution automatically streams real-time traces to your LangSmith dashboard:
-
-1. Open your browser and navigate to: **[smith.langchain.com](https://smith.langchain.com)**
-2. Sign in with your GitHub or Google account.
-3. Select the **`client-handling-agentic-ai`** project.
-4. Here you can inspect:
-   - Full visual **StateGraph execution flow** with every node transition.
-   - Exact prompts and raw LLM responses.
-   - Token usage breakdown and cost estimation.
-   - Latency metrics per agent node.
-
----
-
-## 5. Telegram Alerts & Autonomous Reply Workflows
-
-When prospects respond to your outreach, the system handles them autonomously based on intent:
-
-| Category | System Behavior | Telegram Alert? |
-|---|---|:---:|
-| **`interested`** | Generates friendly response with Calendly booking link | ✅ **Yes (Instant Alert)** |
-| **`question`** | Answers technical questions and offers a 10-minute discovery call | ✅ **Yes (Instant Alert)** |
-| **`unsubscribe`** | Adds email to suppression list and sends a polite opt-out confirmation | ❌ No alert needed |
-| **`not_interested`** | Sends a courteous closing note wishing them success | ❌ No alert needed |
-| **`out_of_office`** | Snoozes conversation until prospect returns | ❌ No alert needed |
-
----
-
-## 6. Anti-Spam Deliverability & Top Unsubscribe System
-
-To ensure emails land strictly in Google/Yahoo **Primary Inbox** rather than Spam or Promotions:
-
-1. **Top Unsubscribe Header:**
-   The email opens with an unmissable top unsubscribe bar:
-   ```text
-   Direct Freelance Inquiry        [ Unsubscribe ] or reply STOP
-   ```
-   This satisfies modern email deliverability RFC rules (RFC 2369 & RFC 8058) without forcing recipients to scroll.
-2. **Natural 1-to-1 Typography:**
-   All heavy promotional card styling, CSS drop-shadows, and marketing frames have been eliminated in favor of clean `#202124` native Gmail typography.
-3. **Automated Spam Keyword Filtering:**
-   The `spam_checker.py` tool scores every draft, blocking hype words like "Free", "100% Guarantee", "Urgent", or ALL CAPS subject lines.
-
----
-
-## 7. FastAPI Microservice Integration
-
-You can run the agent engine as a standalone REST API microservice:
-
-```powershell
-python agentic-ai/server.py
-```
-The server will start on port `8000`:
-- **Health Check:** `GET http://localhost:8000/health`
-- **Outreach API:** `POST http://localhost:8000/api/v1/outreach`
-- **Reply Handler API:** `POST http://localhost:8000/api/v1/reply`
-
-### Example Request (`POST /api/v1/outreach`):
-```json
-{
-  "id": "lead-1",
-  "name": "Dr. Rohit Sen",
-  "business_name": "Apex Spine Care",
-  "email": "dr.rohit@apexspinecare.com",
-  "niche": "clinic",
-  "company_description": "Orthopedic clinic seeking automated WhatsApp appointment reminders and web portal."
-}
-```
-
----
-
-## 8. Troubleshooting & Common FAQs
-
-| Issue | Root Cause | Solution |
-|---|---|---|
-| `ModuleNotFoundError` | Missing Python package | Run `pip install -r agentic-ai/requirements.txt` |
-| `Telegram Alert failed` | Invalid Bot Token or Chat ID | Verify `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` in `.env` |
-| `503 Unavailable (Gemini)` | Temporary load on Gemini 3.7 endpoint | The system automatically fails over to `gemini-3.8-flash` via `with_fallbacks()` |
-| `UnicodeEncodeError on Windows` | Default CP1252 console encoding | Handled automatically by `_setup_path.py` with UTF-8 reconfigure |
-
----
-
-*Authored by: Sk Ahidulla | Coding Ka Maza (https://www.codingkamaza.in)*
+*Engineered with ❤️ for Sk Ahidulla | Coding Ka Maza (https://www.codingkamaza.in)*
