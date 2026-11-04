@@ -1,174 +1,211 @@
-# 📘 Agentic AI মাল্টি-এজেন্ট সিস্টেম — সম্পূর্ণ ইউজার ম্যানুয়াল (Detailed User Manual)
+# 📘 Agentic AI Multi-Agent System — Complete User Manual
 
-স্বাগতম! এই ডিরেক্টরিতে (`agentic-ai/`) পুরো ক্লায়েন্ট আউটরিচ, ফলো-আপ এবং অটোনোমাস রিপ্লাই সিস্টেমটি **LangChain**, **LangGraph**, এবং **LangSmith** ব্যবহার করে একটি স্বয়ংসম্পূর্ণ প্রোডাকশন-গ্রেড মাল্টি-এজেন্ট আর্কিটেকচার হিসেবে তৈরি করা হয়েছে।
-
----
-
-## 📑 সূচিপত্র (Table of Contents)
-1. [সিস্টেম আর্কিটেকচার ও এজেন্টস পরিচিতি](#১-সিস্টেম-আর্কিটেকচার-ও-এজেন্টস-পরিচিতি)
-2. [এনভায়রনমেন্ট সেটআপ ও এপিআই কী কনফিগারেশন](#২-এনভায়রনমেন্ট-সেটআপ-ও-এপিআই-কী-কনফিগারেশন)
-3. [কমান্ড লাইন থেকে সিস্টেম রান করার উপায়](#৩-কমান্ড-লাইন-থেকে-সিস্টেম-রান-করার-উপায়)
-4. [LangSmith-এ লাইভ ট্রেসিং দেখার নিয়ম](#৪-langsmith-এ-লাইভ-ট্রেসিং-দেখার-নিয়ম)
-5. [টেলিগ্রাম অ্যালার্ট ও অটোনোমাস রিপ্লাই সিস্টেম](#৫-টেলিগ্রাম-অ্যালার্ট-ও-অটোনোমাস-রিপ্লাই-সিস্টেম)
-6. [অ্যান্টি-স্প্যাম ফিল্টার ও Top Unsubscribe ডেলিভারিবিলিটি](#৬-অ্যান্টি-স্প্যাম-ফিল্টার-ও-top-unsubscribe-ডেলিভারিবিলিটি)
-7. [FastAPI মাইক্রোসার্ভিস ব্যবহার](#৭-fastapi-মাইক্রোসার্ভিস-ব্যবহার)
-8. [সাধারণ সমস্যা ও সমাধান (Troubleshooting)](#৮-সাধারণ-সমস্যা-ও-সমাধান-troubleshooting)
+Welcome! This directory (`agentic-ai/`) contains a production-ready, autonomous Multi-Agent Client Outreach and Inbound Reply Handling engine built with **LangChain**, **LangGraph**, and **LangSmith**.
 
 ---
 
-## ১. সিস্টেম আর্কিটেকচার ও এজেন্টস পরিচিতি
+## 📑 Table of Contents
+1. [System Architecture & Agent Roles](#1-system-architecture--agent-roles)
+2. [Environment Setup & Configuration](#2-environment-setup--configuration)
+3. [Running the Agents via Command Line (CLI)](#3-running-the-agents-via-command-line-cli)
+4. [Live Tracing & Observability in LangSmith](#4-live-tracing--observability-in-langsmith)
+5. [Telegram Alerts & Autonomous Reply Workflows](#5-telegram-alerts--autonomous-reply-workflows)
+6. [Anti-Spam Deliverability & Top Unsubscribe System](#6-anti-spam-deliverability--top-unsubscribe-system)
+7. [FastAPI Microservice Integration](#7-fastapi-microservice-integration)
+8. [Troubleshooting & Common FAQs](#8-troubleshooting--common-faqs)
 
-এই সিস্টেমে ৫টি প্রধান বিশেষায়িত এজেন্ট একসঙ্গে কাজ করে:
+---
+
+## 1. System Architecture & Agent Roles
+
+The system is coordinated by LangGraph's `StateGraph`, connecting five specialized agents into an event-driven pipeline:
 
 ```mermaid
 flowchart TD
-    A[Prospect Lead Data] --> B[Suppression Gate]
-    B -->|Passed| C[Research Agent]
+    A[Prospect Lead Ingestion] --> B[Suppression Gate]
+    B -->|Eligible| C[Research Agent]
+    B -->|Suppressed| End1([Halt / Skipped])
     C --> D[Copywriter Agent]
-    D --> E[Deliverability & Spam Analyzer Tool]
+    D --> E[Anti-Spam & Deliverability Analyzer]
     E --> F{Human Approval Gate}
     F -->|Approved| G[Dispatch Engine]
-    G --> H[Scheduled Follow-up Agent]
+    F -->|Review Flagged| Review([Approval Queue])
+    G --> H[Follow-Up Agent Sequence]
 
-    I[Client Inbound Reply] --> J[Classifier Agent]
+    I[Prospect Inbound Reply] --> J[Classifier Agent]
     J --> K{Intent Category}
     K -->|Interested / Question| L[Instant Telegram Alert]
     L --> M[Reply Agent]
-    M --> N[Calendar Link & Answer Sent]
+    M --> N[Send Calendar Link & Answer]
     K -->|Unsubscribe / Not Interested| O[Auto Suppression List]
     O --> P[Polite Signoff & Close]
 ```
 
-### এজেন্টদের দায়িত্ব:
+### Specialized Agents Overview:
 1. **Research Agent (`agents/research_agent.py`):**
-   - ক্লায়েন্টের নাম, কোম্পানি এবং তাদের কাজের বিবরণ পড়ে তাদের টেকনিক্যাল সমস্যা ও সুযোগ বের করে (যেমন: বুকিং অ্যাপের অভাব, অটোমেশনের ঘাটতি)।
+   - Analyzes prospect business name, niche, company description, and website.
+   - Identifies high-value software engineering pain points (e.g., manual customer onboarding, lack of automated booking, legacy tech stack) tailored to Sk Ahidulla's freelance services.
 2. **Copywriter Agent (`agents/copywriter_agent.py`):**
-   - ফুল-স্ট্যাক ডেভেলপার Sk Ahidulla-এর পক্ষ থেকে ৮০-১৩০ শব্দের ব্যক্তিগত, আন্তরিক কোল্ড ইমেইল ড্রাফট করে। কোনো চটকদার স্প্যাম শব্দ ব্যবহার করে না।
-3. **Follow-up Agent (`agents/followup_agent.py`):**
-   - আগের মেইলের রেফারেন্স টেনে ৩ দিন ও ৭ দিন পর ভদ্রভাবে ভ্যালু-অ্যাডেড ফলো-আপ ইমেইল তৈরি করে।
+   - Writes concise, 80–130 word, 1-to-1 natural cold emails on behalf of Sk Ahidulla (Full-Stack Engineer & Automation Specialist).
+   - Strictly enforces anti-spam heuristics (zero hype words, no exclamation marks, conversational subject line).
+3. **Follow-Up Agent (`agents/followup_agent.py`):**
+   - Sequences Follow-Up #1 (after 3 days) and Follow-Up #2 (after 7 days).
+   - Politely references the previous outreach context, introduces a relevant case study, and provides a low-friction invitation for a 10-minute call.
 4. **Classifier Agent (`agents/classifier_agent.py`):**
-   - ক্লায়েন্টের রিপ্লাই পড়ে সেটি `interested`, `question`, `meeting_booked`, `not_interested`, নাকি `unsubscribe` তা নিখুঁতভাবে শনাক্ত করে।
+   - Analyzes incoming client replies and extracts intent, sentiment, urgency, and categorization (`interested`, `question`, `meeting_booked`, `not_interested`, `unsubscribe`, `out_of_office`).
 5. **Reply Agent (`agents/reply_agent.py`):**
-   - ক্লায়েন্ট আগ্রহী হলে তৎক্ষণাৎ টেলিগ্রামে নোটিফিকেশন পাঠায় এবং ক্লায়েন্টকে ক্যালেন্ডার বুকিং লিংক সহ উত্তর পাঠায়। আনসাবস্ক্রাইব করতে চাইলে স্বয়ংক্রিয়ভাবে সাপ্রেশন লিস্টে যুক্ত করে দেয়।
+   - When a prospect is interested, generates an enthusiastic response with the Calendly booking link and triggers a real-time Telegram alert.
+   - When an opt-out is detected, automatically adds the email to the suppression list and confirms removal politely.
 
 ---
 
-## ২. এনভায়রনমেন্ট সেটআপ ও এপিআই কী কনফিগারেশন
+## 2. Environment Setup & Configuration
 
-ফাইল লোকেশন: `agentic-ai/.env`
+File location: `agentic-ai/.env`
 
-তোমার প্রয়োজনীয় সমস্ত কি অলরেডি কনফিগার করা আছে:
+Your environment is pre-configured with the following settings:
 ```env
-# LangSmith Tracing
+# LangSmith Tracing & Observability
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_ENDPOINT="https://api.smith.langchain.com"
 LANGCHAIN_API_KEY=your_langsmith_api_key_here
 LANGCHAIN_PROJECT=client-handling-agentic-ai
 
-# AI Models (Gemini 3.7 Flash)
+# AI Models (Gemini 3.7 Flash with resilient auto-fallback to 3.8)
 DEFAULT_LLM_PROVIDER=gemini
 DEFAULT_LLM_MODEL=gemini-3.7-flash
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Telegram Notifications
+# Telegram Instant Alerts
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
 TELEGRAM_CHAT_ID=your_telegram_chat_id_here
 
-# Freelancer Info & Booking
+# Freelancer Profile & Business Defaults
 SENDER_NAME="Sk Ahidulla"
 SENDER_TITLE="Full-Stack Engineer & Automation Specialist"
 SENDER_PHONE="+91 86097 20621"
 SENDER_EMAIL="skahidulla568@gmail.com"
-CALENDAR_BOOKING_LINK="https://cal.com/skahidulla/10min"
+SENDER_WEBSITE="https://www.codingkamaza.in"
+SENDER_YOUTUBE="https://youtube.com/@codingkamaza"
+CALENDAR_BOOKING_LINK="https://calendly.com/gandfadexperiments/30min"
 ```
 
 ---
 
-## ৩. কমান্ড লাইন থেকে সিস্টেম রান করার উপায়
+## 3. Running the Agents via Command Line (CLI)
 
-টার্মিনাল খুলে প্রোজেক্টের রুট ডিরেক্টরিতে যাও (`Client Handling Agentic AI`):
+From your terminal in the workspace root directory (`Client Handling Agentic AI`):
 
-### ক. নতুন লিড আউটরিচ পাইপলাইন টেস্ট করা:
+### A. Test Cold Outreach Pipeline:
 ```powershell
 python agentic-ai/run_outreach.py
 ```
-**কী ঘটবে:**
-- লিড সাপ্রেশন লিস্টে আছে কিনা চেক করবে।
-- ResearchAgent কোম্পানি স্টাডি করবে।
-- CopywriterAgent ৮০-১৩০ শব্দের ব্যক্তিগত মেইল লিখবে।
-- অ্যান্টি-স্প্যাম টুল স্প্যাম স্কোর (0.0) ভেরিফাই করবে।
-- সবার উপরে আনসাবস্ক্রাইব বাটন ও নিচে Sk Ahidulla সিগনেচার যুক্ত করে ফাইনাল আউটপুট প্রিন্ট করবে।
+**What happens:**
+1. Checks if the lead is in the suppression list.
+2. `ResearchAgent` inspects the company description and finds technical pain points.
+3. `CopywriterAgent` drafts an 80–130 word personalized email.
+4. `analyze_email_spam_risk` validates a deliverability score of `0.0`.
+5. Formats the email with a **Top Unsubscribe Button** and Sk Ahidulla's signature block.
+6. Auto-approves and simulates sending.
 
-### খ. ক্লায়েন্টের রিপ্লাই ও টেলিগ্রাম অ্যালার্ট টেস্ট করা:
+### B. Test Inbound Reply Handler & Telegram Alert:
 ```powershell
 python agentic-ai/run_reply.py
 ```
-**কী ঘটবে:**
-- ক্লায়েন্টের রিপ্লাই ক্লাসিফাই করবে (যেমন: `INTERESTED`, Sentiment: `POSITIVE`)।
-- সাথে সাথে তোমার **Telegram Bot** থেকে তোমার ফোনে ইনস্ট্যান্ট অ্যালার্ট মেসেজ পাঠাবে।
-- ক্লায়েন্টকে পাঠানোর জন্য ক্যালেন্ডার বুকিং লিংক সহ উত্তর ড্রাফট করবে।
+**What happens:**
+1. Simulates an incoming email reply from an interested prospect.
+2. `ClassifierAgent` categorizes it as `INTERESTED` with high urgency.
+3. Dispatches an instant real-time notification to your **Telegram Bot**.
+4. `ReplyAgent` generates an autonomous response including your Calendly link (`https://calendly.com/gandfadexperiments/30min`).
 
-### গ. LangSmith টেস্ট ইভালুয়েশন চালানো:
+### C. Run LangSmith Automated Benchmark Evaluation:
 ```powershell
 python agentic-ai/evaluation/langsmith_eval.py
 ```
 
 ---
 
-## ৪. LangSmith-এ লাইভ ট্রেসিং দেখার নিয়ম
+## 4. Live Tracing & Observability in LangSmith
 
-1. ব্রাউজারে যাও: **[smith.langchain.com](https://smith.langchain.com)**
-2. তোমার অ্যাকাউন্ট দিয়ে লগইন করো।
-3. প্রজেক্টের লিস্ট থেকে **`client-handling-agentic-ai`** সিলেক্ট করো।
-4. তুমি দেখতে পাবে:
-   - প্রতিটি রানের পুরো **StateGraph ভিজ্যুয়াল ডায়াগ্রাম**।
-   - প্রতিটা এজেন্টের ইনপুট প্রম্পট ও জেমিনির আসল আউটপুট।
-   - লেটেন্সি (কত মিলি-সেকেন্ড সময় লেগেছে) এবং টোকেন খরচের নির্ভুল হিসাব।
+Every execution automatically streams real-time traces to your LangSmith dashboard:
 
----
-
-## ৫. টেলিগ্রাম অ্যালার্ট ও অটোনোমাস রিপ্লাই সিস্টেম
-
-কোনো প্রস্পেক্ট যখন রিপ্লাই দেয়, সিস্টেম এভাবে কাজ করে:
-1. **Interested Lead:** টেলিগ্রামে 🔥 **HOT LEAD REPLY** মেসেজ পাঠায় যাতে তুমি সাথে সাথে জানতে পারো।
-2. **Question:** ক্লায়েন্টের টেকনিক্যাল প্রশ্নের উত্তর দেয় এবং ১০ মিনিটের মিটিংয়ের জন্য অনুরোধ করে।
-3. **Unsubscribe:** ক্লায়েন্ট যদি বলে "stop" বা "unsubscribe", সিস্টেম কাউকে বিরক্ত না করে নিঃশব্দে তাকে সাপ্রেশন লিস্টে ফেলে দেয় এবং ভদ্রভাবে জানায় যে তাকে রিমুভ করা হয়েছে।
+1. Open your browser and navigate to: **[smith.langchain.com](https://smith.langchain.com)**
+2. Sign in with your GitHub or Google account.
+3. Select the **`client-handling-agentic-ai`** project.
+4. Here you can inspect:
+   - Full visual **StateGraph execution flow** with every node transition.
+   - Exact prompts and raw LLM responses.
+   - Token usage breakdown and cost estimation.
+   - Latency metrics per agent node.
 
 ---
 
-## ৬. অ্যান্টি-স্প্যাম ফিল্টার ও Top Unsubscribe ডেলিভারিবিলিটি
+## 5. Telegram Alerts & Autonomous Reply Workflows
 
-গুগল এবং ইয়াহু ২০২৪/২০২৫-এর নতুন নিয়ম অনুযায়ী স্প্যাম এড়াতে এই সিস্টেমে দুটি সুরক্ষা রয়েছে:
-1. **Top Unsubscribe Button:**
-   ইমেলের বডির একদম শুরুতে হেডার বারে `[Unsubscribe] or reply STOP` থাকে, যা গুগল স্প্যাম ফিল্টারের শর্ত পূরণ করে।
-2. **মার্কেটিং কার্ডহীন ন্যাচারাল লেআউট:**
-   ভারী সিএসএস বা রঙিন বক্স বাদ দিয়ে আসল ১-অন-১ জিমেইল কম্পোজ স্টাইলে মেসেজ তৈরি হয়, যার ফলে ইমেল সরাসরি **Primary Inbox**-এ যায়।
+When prospects respond to your outreach, the system handles them autonomously based on intent:
+
+| Category | System Behavior | Telegram Alert? |
+|---|---|:---:|
+| **`interested`** | Generates friendly response with Calendly booking link | ✅ **Yes (Instant Alert)** |
+| **`question`** | Answers technical questions and offers a 10-minute discovery call | ✅ **Yes (Instant Alert)** |
+| **`unsubscribe`** | Adds email to suppression list and sends a polite opt-out confirmation | ❌ No alert needed |
+| **`not_interested`** | Sends a courteous closing note wishing them success | ❌ No alert needed |
+| **`out_of_office`** | Snoozes conversation until prospect returns | ❌ No alert needed |
 
 ---
 
-## ৭. FastAPI মাইক্রোসার্ভিস ব্যবহার
+## 6. Anti-Spam Deliverability & Top Unsubscribe System
 
-তুমি যদি ভবিষ্যতে কোনো ওয়েবসাইট বা অন্য কোনো সিস্টেম থেকে এপিআই-এর মাধ্যমে এটি চালাতে চাও:
+To ensure emails land strictly in Google/Yahoo **Primary Inbox** rather than Spam or Promotions:
+
+1. **Top Unsubscribe Header:**
+   The email opens with an unmissable top unsubscribe bar:
+   ```text
+   Direct Freelance Inquiry        [ Unsubscribe ] or reply STOP
+   ```
+   This satisfies modern email deliverability RFC rules (RFC 2369 & RFC 8058) without forcing recipients to scroll.
+2. **Natural 1-to-1 Typography:**
+   All heavy promotional card styling, CSS drop-shadows, and marketing frames have been eliminated in favor of clean `#202124` native Gmail typography.
+3. **Automated Spam Keyword Filtering:**
+   The `spam_checker.py` tool scores every draft, blocking hype words like "Free", "100% Guarantee", "Urgent", or ALL CAPS subject lines.
+
+---
+
+## 7. FastAPI Microservice Integration
+
+You can run the agent engine as a standalone REST API microservice:
 
 ```powershell
 python agentic-ai/server.py
 ```
-সার্ভারটি পোর্ট `8000`-এ চালু হবে:
+The server will start on port `8000`:
 - **Health Check:** `GET http://localhost:8000/health`
 - **Outreach API:** `POST http://localhost:8000/api/v1/outreach`
 - **Reply Handler API:** `POST http://localhost:8000/api/v1/reply`
 
+### Example Request (`POST /api/v1/outreach`):
+```json
+{
+  "id": "lead-1",
+  "name": "Dr. Rohit Sen",
+  "business_name": "Apex Spine Care",
+  "email": "dr.rohit@apexspinecare.com",
+  "niche": "clinic",
+  "company_description": "Orthopedic clinic seeking automated WhatsApp appointment reminders and web portal."
+}
+```
+
 ---
 
-## ৮. সাধারণ সমস্যা ও সমাধান (Troubleshooting)
+## 8. Troubleshooting & Common FAQs
 
-| সমস্যা | কারণ | সমাধান |
+| Issue | Root Cause | Solution |
 |---|---|---|
-| `ModuleNotFoundError` | লাইব্রেরি মিসিং | `pip install -r agentic-ai/requirements.txt` রান করো |
-| `Telegram Alert failed` | বট বা চ্যাট আইডি ভুল | `.env` ফাইলে `TELEGRAM_BOT_TOKEN` ও `TELEGRAM_CHAT_ID` চেক করো |
-| `UnicodeEncodeError` | উইন্ডোজ কনসোল এনকোডিং | `_setup_path.py` অটোমেটিক UTF-8 হ্যান্ডেল করে |
-| `503 Unavailable (Gemini)` | গুগলের এপিআই সার্ভারে সাময়িক লোড | ২-৩ সেকেন্ড পর আবার চালালে স্বয়ংক্রিয়ভাবে ঠিক হয়ে যায় |
+| `ModuleNotFoundError` | Missing Python package | Run `pip install -r agentic-ai/requirements.txt` |
+| `Telegram Alert failed` | Invalid Bot Token or Chat ID | Verify `TELEGRAM_BOT_TOKEN` & `TELEGRAM_CHAT_ID` in `.env` |
+| `503 Unavailable (Gemini)` | Temporary load on Gemini 3.7 endpoint | The system automatically fails over to `gemini-3.8-flash` via `with_fallbacks()` |
+| `UnicodeEncodeError on Windows` | Default CP1252 console encoding | Handled automatically by `_setup_path.py` with UTF-8 reconfigure |
 
 ---
 
-*নির্মাতা: Sk Ahidulla | Coding Ka Maza (https://www.codingkamaza.in)*
+*Authored by: Sk Ahidulla | Coding Ka Maza (https://www.codingkamaza.in)*
