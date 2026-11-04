@@ -15,9 +15,10 @@ def render_email_html(body: str, sender_email: Optional[str] = None) -> str:
     - Professional Sk Ahidulla signature block.
     """
     account_email = sender_email or config.SENDER_EMAIL
+    body_str = str(body or "")
 
     # Convert paragraphs into clean <p> tags
-    paragraphs = [p.strip() for p in body.strip().split("\n\n") if p.strip()]
+    paragraphs = [p.strip() for p in body_str.strip().split("\n\n") if p.strip()]
     pitch_html_parts = []
     for p in paragraphs:
         escaped = html.escape(p).replace("\n", "<br/>")
@@ -25,6 +26,7 @@ def render_email_html(body: str, sender_email: Optional[str] = None) -> str:
             f'<p style="margin: 0 0 16px 0; font-size: 14.5px; line-height: 1.6; color: #202124;">{escaped}</p>'
         )
     pitch_html = "\n".join(pitch_html_parts)
+    safe_phone = (config.SENDER_PHONE or "").replace(" ", "")
 
     return f"""<!DOCTYPE html>
 <html>
@@ -71,7 +73,7 @@ def render_email_html(body: str, sender_email: Optional[str] = None) -> str:
       </div>
 
       <div style="font-size: 13px; color: #3c4043; line-height: 1.8;">
-        <span>📞 Phone: <a href="tel:{config.SENDER_PHONE.replace(' ', '')}" style="color: #3c4043; text-decoration: none;">{config.SENDER_PHONE}</a></span><br/>
+        <span>📞 Phone: <a href="tel:{safe_phone}" style="color: #3c4043; text-decoration: none;">{config.SENDER_PHONE}</a></span><br/>
         <span>✉️ Email: <a href="mailto:{account_email}" style="color: #1a73e8; text-decoration: none;">{account_email}</a></span><br/>
         <span>🌐 Website: <a href="{config.SENDER_WEBSITE}" target="_blank" style="color: #1a73e8; text-decoration: underline;">codingkamaza.in</a></span><br/>
         <span>▶️ YouTube: <a href="{config.SENDER_YOUTUBE}" target="_blank" style="color: #1a73e8; text-decoration: underline;">youtube.com/@codingkamaza</a></span>
@@ -86,10 +88,11 @@ def render_email_html(body: str, sender_email: Optional[str] = None) -> str:
 def render_email_plain_text(body: str, sender_email: Optional[str] = None) -> str:
     """Renders plain text version with Top Unsubscribe header and full signature."""
     account_email = sender_email or config.SENDER_EMAIL
+    body_str = str(body or "").strip()
     return f"""[Unsubscribe: mailto:{account_email}?subject=Unsubscribe or reply STOP]
 --------------------------------------------------
 
-{body.strip()}
+{body_str}
 
 Best regards,
 
@@ -106,7 +109,6 @@ def send_email_outreach(to_email: str, subject: str, body: str, lead_id: str) ->
     """
     Sends cold outreach email to the prospect with top unsubscribe headers and delivers clean styling.
     """
-    html_content = render_email_html(body)
     plain_content = render_email_plain_text(body)
 
     # In production, this can invoke Google Workspace / Gmail API send or SMTP
@@ -119,4 +121,3 @@ def send_email_outreach(to_email: str, subject: str, body: str, lead_id: str) ->
         "status": "sent",
         "preview_plain": plain_content[:180] + "...",
     }
-

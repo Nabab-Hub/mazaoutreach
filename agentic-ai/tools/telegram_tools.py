@@ -1,3 +1,4 @@
+import html
 import requests
 from typing import Optional, Dict, Any
 from langchain_core.tools import tool
@@ -43,15 +44,20 @@ def send_telegram_alert(message: str, parse_mode: str = "HTML") -> Dict[str, Any
 
 
 def format_reply_alert(lead_name: str, company: str, email: str, category: str, reply_text: str) -> str:
-    """Helper to format a sleek Telegram notification message."""
+    """Helper to format a sleek Telegram notification message with HTML safety escaping."""
     badge = "🔥 <b>HOT LEAD REPLY</b>" if category == "interested" else "📩 <b>NEW PROSPECT REPLY</b>"
+    escaped_lead_name = html.escape(str(lead_name or "Prospect"))
+    escaped_company = html.escape(str(company or "Target Business"))
+    escaped_email = html.escape(str(email or ""))
+    escaped_category = html.escape(str(category or "other").upper())
+    escaped_reply = html.escape(str(reply_text or "")[:350])
+
     return (
         f"{badge}\n\n"
-        f"<b>From:</b> {lead_name} ({company})\n"
-        f"<b>Email:</b> <code>{email}</code>\n"
-        f"<b>Category:</b> <code>{category.upper()}</code>\n\n"
+        f"<b>From:</b> {escaped_lead_name} ({escaped_company})\n"
+        f"<b>Email:</b> <code>{escaped_email}</code>\n"
+        f"<b>Category:</b> <code>{escaped_category}</code>\n\n"
         f"<b>Message:</b>\n"
-        f"<i>\"{reply_text[:350]}{'...' if len(reply_text) > 350 else ''}\"</i>\n\n"
+        f"<i>\"{escaped_reply}{'...' if len(str(reply_text or '')) > 350 else ''}\"</i>\n\n"
         f"⚡ <i>Agentic AI Response has been drafted and action dispatched.</i>"
     )
-

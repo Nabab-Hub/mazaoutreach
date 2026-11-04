@@ -1,15 +1,24 @@
 import _setup_path
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
+
 try:
-    from graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
+    from graphs.orchestrator import (
+        run_lead_outreach_pipeline,
+        run_reply_processing_pipeline,
+        run_followup_pipeline,
+    )
     import config
 except ImportError:
-    from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
+    from agentic_ai.graphs.orchestrator import (
+        run_lead_outreach_pipeline,
+        run_reply_processing_pipeline,
+        run_followup_pipeline,
+    )
     from agentic_ai import config
 
 app = FastAPI(
@@ -28,24 +37,42 @@ app.add_middleware(
 
 
 class LeadPayload(BaseModel):
-    id: str
-    name: str = ""
-    business_name: str
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default="lead-1")
+    name: str = Field(default="")
+    business_name: str = Field(default="Target Company")
     email: str
-    niche: str = "b2b"
-    company_description: str = ""
-    website: str = ""
-    city: str = ""
-    notes: str = ""
+    niche: str = Field(default="b2b")
+    company_description: str = Field(default="")
+    website: str = Field(default="")
+    city: str = Field(default="")
+    notes: str = Field(default="")
 
 
 class ReplyPayload(BaseModel):
-    id: str = ""
-    lead_id: str = ""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default="")
+    lead_id: str = Field(default="")
     from_email: str
-    subject: str = ""
+    subject: str = Field(default="")
     body: str
-    previous_outreach: str = ""
+    previous_outreach: str = Field(default="")
+
+
+class FollowUpPayload(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    lead: LeadPayload
+    draft: Optional[Dict[str, Any]] = None
+    followup_number: int = Field(default=1)
+
+
+@app.get("/")
+def root():
+    return {
+        "status": "online",
+        "service": "Agentic AI Client Outreach Engine",
+        "endpoints": ["/health", "/api/v1/outreach", "/api/v1/reply", "/api/v1/followup", "/docs"],
+    }
 
 
 @app.get("/health")
@@ -97,7 +124,24 @@ def process_reply(payload: ReplyPayload):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/v1/followup")
+def process_followup(payload: FollowUpPayload):
+    try:
+        result = run_followup_pipeline(
+            lead_data=payload.lead.model_dump(),
+            initial_draft=payload.draft or {},
+            followup_number=payload.followup_number
+        )
+        return {
+            "success": True,
+            "draft": result.get("draft"),
+            "logs": result.get("logs", []),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
-    print(f"Starting Agentic AI FastAPI Server on port 8000...")
+    print("Starting Agentic AI FastAPI Server on http://0.0.0.0:8000...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

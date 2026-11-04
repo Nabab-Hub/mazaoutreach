@@ -86,13 +86,13 @@ def draft_outreach_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     # Perform automated Spam & Deliverability Check Tool
     spam_analysis = analyze_email_spam_risk.invoke({
-        "subject": draft_data["subject"],
-        "body": draft_data["body"]
+        "subject": draft_data.get("subject", ""),
+        "body": draft_data.get("body", "")
     })
 
-    draft_data["spam_score"] = spam_analysis["spam_score"]
-    draft_data["spam_warnings"] = spam_analysis["warnings"]
-    draft_data["word_count"] = spam_analysis["word_count"]
+    draft_data["spam_score"] = spam_analysis.get("spam_score", 0.0)
+    draft_data["spam_warnings"] = spam_analysis.get("warnings", [])
+    draft_data["word_count"] = spam_analysis.get("word_count", 0)
 
     logs = state.get("logs", [])
     logs.append(

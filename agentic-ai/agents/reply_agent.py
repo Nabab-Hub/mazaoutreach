@@ -104,7 +104,13 @@ def handle_reply_action_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 "key_intent": classification.get("key_question_or_intent", "General inquiry"),
                 "reply_body": reply_dict.get("body", ""),
             })
-            generated_body = res.content if hasattr(res, "content") else str(res)
+            if hasattr(res, "content"):
+                if isinstance(res.content, list):
+                    generated_body = "".join(part.get("text", "") if isinstance(part, dict) else str(part) for part in res.content)
+                else:
+                    generated_body = str(res.content)
+            else:
+                generated_body = str(res)
         except Exception:
             generated_body = (
                 f"Hi {contact_name},\n\n"

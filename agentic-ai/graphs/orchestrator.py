@@ -1,11 +1,13 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 try:
     from graphs.outreach_graph import outreach_app
     from graphs.reply_graph import reply_app
+    from agents.followup_agent import draft_followup_node
 except ImportError:
     from agentic_ai.graphs.outreach_graph import outreach_app
     from agentic_ai.graphs.reply_graph import reply_app
+    from agentic_ai.agents.followup_agent import draft_followup_node
 
 
 def run_lead_outreach_pipeline(lead_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -38,4 +40,23 @@ def run_reply_processing_pipeline(
         "logs": [f"[Orchestrator] Processing inbound reply from {reply_data.get('from_email')}"],
     }
     final_state = reply_app.invoke(initial_state)
+    return final_state
+
+
+def run_followup_pipeline(
+    lead_data: Dict[str, Any],
+    initial_draft: Optional[Dict[str, Any]] = None,
+    followup_number: int = 1
+) -> Dict[str, Any]:
+    """
+    Executes the Follow-up Generation workflow:
+    Context Check -> Follow-up Copywriter Agent -> Anti-Spam & Deliverability.
+    """
+    initial_state = {
+        "lead": lead_data,
+        "draft": initial_draft or {},
+        "followup_number": followup_number,
+        "logs": [f"[Orchestrator] Generating Follow-up #{followup_number} for {lead_data.get('email')}"],
+    }
+    final_state = draft_followup_node(initial_state)
     return final_state
