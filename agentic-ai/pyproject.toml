@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-ai"
+version = "1.0.0"
+description = "Multi-Agent Client Outreach & Inbound Reply Automation using LangChain, LangGraph, and LangSmith"
+authors = [{ name = "Sk Ahidulla", email = "skahidulla568@gmail.com" }]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "langchain>=0.3.0",
+    "langgraph>=0.2.0",
+    "langsmith>=0.1.100",
+    "langchain-core>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+    "langchain-openai>=0.2.0",
+    "pydantic>=2.7.0",
+    "python-dotenv>=1.0.1",
+    "requests>=2.31.0",
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.0",
+    "rich>=13.7.0",
+]
+
+[tool.setuptools]
+packages = ["agents", "graphs", "tools", "evaluation"]
+py-modules = ["config", "state", "models", "run_outreach", "run_reply", "server", "_setup_path"]
+
+[tool.pyright]
+include = ["."]
+extraPaths = ["."]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
