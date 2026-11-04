@@ -5,8 +5,12 @@ from typing import Dict, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
-from agentic_ai import config
+try:
+    from graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
+    import config
+except ImportError:
+    from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
+    from agentic_ai import config
 
 app = FastAPI(
     title="Agentic AI Client Outreach Engine",

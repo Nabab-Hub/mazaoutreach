@@ -2,8 +2,12 @@ import _setup_path
 import sys
 import json
 
-from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline
-from agentic_ai import config
+try:
+    from graphs.orchestrator import run_lead_outreach_pipeline
+    import config
+except ImportError:
+    from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline
+    from agentic_ai import config
 
 
 def main():
