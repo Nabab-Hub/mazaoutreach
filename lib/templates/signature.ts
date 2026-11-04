@@ -23,22 +23,27 @@ export const COMPLIANCE_OPT_OUT = 'Reply STOP to unsubscribe.';
 export function cleanPitchBody(body: string): string {
   let text = (body || '').trim();
 
-  // Strip top unsubscribe bar/header if present (e.g. from previously formatted plain text drafts)
+  // 1. Strip accidental 'Subject: ...' at the very beginning of the body if present
+  text = text.replace(/^Subject:\s*[^\r\n]*\r?\n+/i, '').trim();
+
+  // 2. Strip top unsubscribe bar/header if present (e.g. from previously formatted plain text drafts)
   text = text.replace(/^\[(?:Unsubscribe|Opt-out)[^\]]*\]\s*[-—_]*\s*/i, '').trim();
 
-  // Strip unsubscribe lines or disclaimers at the bottom
+  // 3. Strip unsubscribe lines or disclaimers at the bottom
   text = text.replace(/(\r?\n)*[-—_]{2,}[\s\S]*$/i, '').trim();
   text = text.replace(/(\r?\n)*(?:To unsubscribe|Reply STOP to unsubscribe|No longer wish to receive)[\s\S]*$/i, '').trim();
 
-  // Strip signoffs and contact blocks (Sk Ahidulla, Alex Vance, [Your Name], etc.)
+  // 4. Strip trailing signoffs ONLY when on a dedicated signature line at the very end
+  // (e.g. '\nBest regards,\nSk Ahidulla' or '\nWarm regards,\nAlex')
+  // CRITICAL: Do NOT match 'Thanks for reaching out' or 'Thank you for getting back' in body sentences!
   text = text.replace(
-    /(\r?\n)*(?:Best(?:\s+regards)?|Warm(?:\s+regards)?|Kind(?:\s+regards)?|Cheers|Sincerely|Thanks|Thank\s+you),?\s*(?:\r?\n)*(?:Alex Vance|Sk Ahidulla|\[Your Name\]|Freelance Developer|Outreach Partner)?[\s\S]*$/i,
+    /(?:\r?\n)+\s*(?:Best\s+regards|Warm\s+regards|Kind\s+regards|Regards|Cheers|Sincerely|Thanks\s+and\s+regards|Warmly),?\s*(?:\r?\n)+(?:Alex\s+Vance|Sk\s+Ahidulla|\[Your\s+Name\]|Freelance\s+Developer|Outreach\s+Partner)?[\s\S]*$/i,
     ''
   ).trim();
 
-  // Strip standalone trailing contact information if present
-  text = text.replace(/(\r?\n)*(?:Sk Ahidulla|\+91\s*8609720621|skahidulla568@gmail\.com)[\s\S]*$/i, '').trim();
-  text = text.replace(/(\r?\n)*(?:\[Your Name\]|Alex Vance)[\s\S]*$/i, '').trim();
+  // 5. Strip standalone trailing contact information if present
+  text = text.replace(/(?:\r?\n)+\s*(?:Sk Ahidulla|\+91\s*8609720621|skahidulla568@gmail\.com)[\s\S]*$/i, '').trim();
+  text = text.replace(/(?:\r?\n)+\s*(?:\[Your Name\]|Alex Vance)[\s\S]*$/i, '').trim();
 
   return text;
 }
