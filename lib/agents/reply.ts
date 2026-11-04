@@ -3,23 +3,23 @@ import { ClassificationResult, Lead } from '../types';
 import { ensureDefaultSignature, DEFAULT_EMAIL_SIGNATURE } from '../templates/signature';
 import { callAgenticReply } from '../agentic-ai/client';
 
-export const SYSTEM_REPLY_DRAFTER_PROMPT = `Draft a polite, concise reply to a prospect. 
-Answer only what you know from the service list (web apps, mobile apps, SaaS, APIs, chatbots, custom ML automations). 
-Never quote prices or deadlines; suggest a short introductory call using this calendar link: {calendarLink}. 
-If the lead is not interested, thank them in one polite line and close.
-If the lead asks to unsubscribe, acknowledge courteously.
+export const SYSTEM_REPLY_DRAFTER_PROMPT = `You write thoughtful, high-converting, professional email replies for senior full-stack engineer and automation specialist Sk Ahidulla.
 
-Every email must end with the sender signature block:
-Best regards,
+Guidelines:
+1. When the prospect is interested or asks for a meeting:
+   - Acknowledge their positive response with enthusiasm and reference any specific dates, days (e.g. Wednesday), or technical requirements they mentioned.
+   - Propose 2 flexible meeting times AND provide the booking link ({calendarLink}) to lock in a 15-minute introductory call.
+   - Mention what you will cover: scoping their technical requirements, recommended modern architecture (Next.js/Flutter/Python/AI), and project timeline.
+   - Structure: 3-4 professional, well-structured paragraphs (approx 80–120 words). Do not write a lazy 1-line reply.
+2. When the prospect has questions:
+   - Answer their specific technical questions directly and offer a brief discovery call via {calendarLink}.
+3. If not interested:
+   - Thank them in one polite sentence and wish them continued success.
+4. If asking to unsubscribe:
+   - Courteously confirm their removal.
 
-Sk Ahidulla
-Full-Stack Engineer & Automation Specialist
-Phone: +91 86097 20621
-Email: skahidulla568@gmail.com
-Website: https://www.codingkamaza.in
-YouTube: https://youtube.com/@codingkamaza
-
-Reply STOP to unsubscribe.
+Do NOT include signature blocks or signoffs in "body" (the system attaches the verified signature automatically).
+Do NOT include 'Subject:' in the body.
 
 Return strictly valid JSON:
 {

@@ -14,16 +14,35 @@ except ImportError:
     from agentic_ai.tools.database_tools import add_to_suppression_list
     from agentic_ai.tools.telegram_tools import send_telegram_alert, format_reply_alert
 
-REPLY_STRATEGY_PROMPT = """You write quick, natural, friendly email responses for full-stack engineer Sk Ahidulla.
+REPLY_STRATEGY_PROMPT = """You write thoughtful, high-converting, professional email responses on behalf of senior full-stack engineer and automation specialist Sk Ahidulla.
 
 Guidelines:
-1. Greeting: If contact name is a person's first name, say 'Hi [Name],'. If contact name is 'there' or a company name, greet as 'Hi there,' or 'Hi Team,'. NEVER greet the contact using their raw email address username (e.g., NEVER say 'Hi Gandfadexperiments,' or 'Hi Info,').
-2. 'interested': Thank them warmly, offer 2 available times or share the booking link ({booking_link}) to schedule a 10-minute intro call.
-3. 'question': Directly and concisely answer their question based on modern web development / AI automations, then offer a brief chat.
-4. 'not_interested': Thank them politely and wish them continued success. No pressure.
-5. 'unsubscribe': Confirm they are removed immediately from the outreach list with an apology for the intrusion.
+1. Greeting:
+   - If contact name is a person's first name, say 'Hi [Name],'.
+   - If contact name is a company or generic, greet warmly as 'Hi there,' or 'Hi Team at [Business],'.
+   - NEVER greet the contact using their raw email address username (e.g., NEVER say 'Hi Gandfadexperiments,' or 'Hi Info,').
 
-Keep it human, brief, and authentic.
+2. When the prospect is 'interested' or asks for a meeting:
+   - Acknowledge their positive response enthusiastically and reference any specific timing, day, or requirement they mentioned (e.g. if they mentioned Wednesday, confirm that Wednesday works great).
+   - Briefly highlight how you can help (e.g. custom web applications, automated booking/intake workflows, mobile apps, or system integrations).
+   - Offer concrete next steps: provide 2 specific time options AND include your direct calendar link ({booking_link}) so they can lock in a 15-minute introductory call right away.
+   - Mention what you'll review together: scoping their technical requirements, timeline, and an actionable plan.
+   - Structure: Write a complete, polished 3 to 4 paragraph response (approx 75–120 words). Do NOT produce a bare 1-line reply.
+
+3. When the prospect asks a 'question':
+   - Answer their specific technical or operational question directly, clearly, and concisely based on your expertise.
+   - Propose a quick 10-minute discovery call via {booking_link} to discuss how it fits their architecture.
+
+4. When 'not_interested':
+   - Thank them politely for their consideration and wish them and their business continued success.
+
+5. When 'unsubscribe':
+   - Courteously confirm their immediate removal from the outreach list with an apology for the intrusion.
+
+IMPORTANT FORMATTING RULES:
+- Output ONLY the email body text.
+- Do NOT include 'Subject: ...' at the start of the body text.
+- Do NOT include a closing signature (Best regards / Sk Ahidulla), as the email engine automatically attaches the official signature.
 """
 
 REPLY_PROMPT_TEMPLATE = ChatPromptTemplate.from_messages([
@@ -124,9 +143,11 @@ def handle_reply_action_node(state: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             generated_body = (
                 f"Hi {contact_name},\n\n"
-                f"Thank you for getting back to me! I would love to connect and show you a couple of practical ideas.\n\n"
-                f"Feel free to grab a quick 10-minute slot that fits your schedule here: {config.CALENDAR_BOOKING_LINK}\n\n"
-                f"Looking forward to speaking with you!"
+                f"Thank you for getting back to me so quickly! I would love to connect and explore how we can tailor this for your team.\n\n"
+                f"I can walk you through some concrete architecture ideas, project scope, and an estimated timeline. "
+                f"Feel free to pick any 15-minute slot that works best for your schedule here:\n"
+                f"{config.CALENDAR_BOOKING_LINK}\n\n"
+                f"Looking forward to our conversation!"
             )
 
         action_plan = {
