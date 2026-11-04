@@ -1,10 +1,18 @@
 from typing import Dict, Any
 from langchain_core.prompts import ChatPromptTemplate
-from agentic_ai import config
-from agentic_ai.models import get_chat_model
-from agentic_ai.state import ReplyActionPlan
-from agentic_ai.tools.database_tools import add_to_suppression_list
-from agentic_ai.tools.telegram_tools import send_telegram_alert, format_reply_alert
+
+try:
+    import config
+    from models import get_chat_model
+    from state import ReplyActionPlan
+    from tools.database_tools import add_to_suppression_list
+    from tools.telegram_tools import send_telegram_alert, format_reply_alert
+except ImportError:
+    from agentic_ai import config
+    from agentic_ai.models import get_chat_model
+    from agentic_ai.state import ReplyActionPlan
+    from agentic_ai.tools.database_tools import add_to_suppression_list
+    from agentic_ai.tools.telegram_tools import send_telegram_alert, format_reply_alert
 
 REPLY_STRATEGY_PROMPT = """You write quick, natural, friendly email responses for full-stack engineer Sk Ahidulla.
 
@@ -120,4 +128,3 @@ def handle_reply_action_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "telegram_alert": alert_result,
         "logs": logs,
     }
-

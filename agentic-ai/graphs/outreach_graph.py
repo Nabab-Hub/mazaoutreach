@@ -1,10 +1,18 @@
 from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, START, END
-from agentic_ai.state import OutreachState
-from agentic_ai.agents.research_agent import research_lead_node
-from agentic_ai.agents.copywriter_agent import draft_outreach_node
-from agentic_ai.tools.database_tools import check_email_suppressed
-from agentic_ai.tools.gmail_tools import render_email_html, render_email_plain_text, send_email_outreach
+
+try:
+    from state import OutreachState
+    from agents.research_agent import research_lead_node
+    from agents.copywriter_agent import draft_outreach_node
+    from tools.database_tools import check_email_suppressed
+    from tools.gmail_tools import render_email_html, render_email_plain_text, send_email_outreach
+except ImportError:
+    from agentic_ai.state import OutreachState
+    from agentic_ai.agents.research_agent import research_lead_node
+    from agentic_ai.agents.copywriter_agent import draft_outreach_node
+    from agentic_ai.tools.database_tools import check_email_suppressed
+    from agentic_ai.tools.gmail_tools import render_email_html, render_email_plain_text, send_email_outreach
 
 
 def check_suppression_node(state: OutreachState) -> Dict[str, Any]:
@@ -142,4 +150,3 @@ def create_outreach_graph() -> StateGraph:
 
 
 outreach_app = create_outreach_graph()
-

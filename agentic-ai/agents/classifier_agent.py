@@ -1,7 +1,12 @@
 from typing import Dict, Any
 from langchain_core.prompts import ChatPromptTemplate
-from agentic_ai.models import get_chat_model
-from agentic_ai.state import ClassificationResult
+
+try:
+    from models import get_chat_model
+    from state import ClassificationResult
+except ImportError:
+    from agentic_ai.models import get_chat_model
+    from agentic_ai.state import ClassificationResult
 
 CLASSIFIER_SYSTEM_PROMPT = """You are an expert Inbound Sales Email Reply Classifier for freelance engineer Sk Ahidulla.
 Your job is to read an incoming prospect reply and accurately categorize it.
@@ -93,4 +98,3 @@ def classify_reply_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "classification": classification_data,
         "logs": logs,
     }
-

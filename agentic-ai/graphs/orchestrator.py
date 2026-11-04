@@ -1,6 +1,11 @@
 from typing import List, Dict, Any
-from agentic_ai.graphs.outreach_graph import outreach_app
-from agentic_ai.graphs.reply_graph import reply_app
+
+try:
+    from graphs.outreach_graph import outreach_app
+    from graphs.reply_graph import reply_app
+except ImportError:
+    from agentic_ai.graphs.outreach_graph import outreach_app
+    from agentic_ai.graphs.reply_graph import reply_app
 
 
 def run_lead_outreach_pipeline(lead_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -34,4 +39,3 @@ def run_reply_processing_pipeline(
     }
     final_state = reply_app.invoke(initial_state)
     return final_state
-

@@ -1,7 +1,12 @@
 from typing import Dict, Any
 from langchain_core.prompts import ChatPromptTemplate
-from agentic_ai.models import get_chat_model
-from agentic_ai.state import ResearchResult
+
+try:
+    from models import get_chat_model
+    from state import ResearchResult
+except ImportError:
+    from agentic_ai.models import get_chat_model
+    from agentic_ai.state import ResearchResult
 
 RESEARCH_SYSTEM_PROMPT = """You are a senior B2B Technical Researcher and Lead Qualification Analyst.
 Your goal is to inspect a prospect business, understand what they do from their company description and niche,
@@ -75,4 +80,3 @@ def research_lead_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "research": research_data,
         "logs": logs,
     }
-

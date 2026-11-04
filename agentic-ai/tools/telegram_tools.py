@@ -1,7 +1,10 @@
 import requests
 from typing import Optional, Dict, Any
 from langchain_core.tools import tool
-from agentic_ai import config
+try:
+    import config
+except ImportError:
+    from agentic_ai import config
 
 
 @tool

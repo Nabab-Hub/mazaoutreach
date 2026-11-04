@@ -1,7 +1,12 @@
 from typing import Dict, Any
 from langchain_core.prompts import ChatPromptTemplate
-from agentic_ai.models import get_chat_model
-from agentic_ai.state import EmailDraft
+
+try:
+    from models import get_chat_model
+    from state import EmailDraft
+except ImportError:
+    from agentic_ai.models import get_chat_model
+    from agentic_ai.state import EmailDraft
 
 FOLLOWUP_SYSTEM_PROMPT = """You write brief, polite, value-adding follow-up emails for full-stack developer Sk Ahidulla.
 The recipient has not replied to an initial cold email sent a few days ago.
@@ -75,4 +80,3 @@ def draft_followup_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "draft": fu_data,
         "logs": logs,
     }
-

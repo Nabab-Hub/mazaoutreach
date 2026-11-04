@@ -11,10 +11,17 @@ from pathlib import Path
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+# Add agentic-ai directory to sys.path
+agentic_dir = Path(__file__).resolve().parent.parent
+if str(agentic_dir) not in sys.path:
+    sys.path.insert(0, str(agentic_dir))
 
-from agentic_ai import config
-from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
+try:
+    import config
+    from graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
+except ImportError:
+    from agentic_ai import config
+    from agentic_ai.graphs.orchestrator import run_lead_outreach_pipeline, run_reply_processing_pipeline
 
 
 def evaluate_sample_outreach():

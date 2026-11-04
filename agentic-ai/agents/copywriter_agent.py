@@ -1,9 +1,15 @@
 import re
 from typing import Dict, Any
 from langchain_core.prompts import ChatPromptTemplate
-from agentic_ai.models import get_chat_model
-from agentic_ai.state import EmailDraft
-from agentic_ai.tools.spam_checker import analyze_email_spam_risk
+
+try:
+    from models import get_chat_model
+    from state import EmailDraft
+    from tools.spam_checker import analyze_email_spam_risk
+except ImportError:
+    from agentic_ai.models import get_chat_model
+    from agentic_ai.state import EmailDraft
+    from agentic_ai.tools.spam_checker import analyze_email_spam_risk
 
 COPYWRITER_SYSTEM_PROMPT = """You write short, friendly, high-converting 1-to-1 cold emails for a software developer named Sk Ahidulla.
 Services: Modern responsive websites, mobile apps, SaaS, backend APIs, WhatsApp/chatbots, custom automations.
@@ -97,4 +103,3 @@ def draft_outreach_node(state: Dict[str, Any]) -> Dict[str, Any]:
         "draft": draft_data,
         "logs": logs,
     }
-

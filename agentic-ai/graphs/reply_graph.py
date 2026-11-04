@@ -1,9 +1,16 @@
 from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, START, END
-from agentic_ai.state import ReplyState
-from agentic_ai.agents.classifier_agent import classify_reply_node
-from agentic_ai.agents.reply_agent import handle_reply_action_node
-from agentic_ai.tools.gmail_tools import send_email_outreach
+
+try:
+    from state import ReplyState
+    from agents.classifier_agent import classify_reply_node
+    from agents.reply_agent import handle_reply_action_node
+    from tools.gmail_tools import send_email_outreach
+except ImportError:
+    from agentic_ai.state import ReplyState
+    from agentic_ai.agents.classifier_agent import classify_reply_node
+    from agentic_ai.agents.reply_agent import handle_reply_action_node
+    from agentic_ai.tools.gmail_tools import send_email_outreach
 
 
 def dispatch_reply_node(state: ReplyState) -> Dict[str, Any]:
@@ -51,4 +58,3 @@ def create_reply_graph() -> StateGraph:
 
 
 reply_app = create_reply_graph()
-

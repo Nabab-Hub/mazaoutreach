@@ -1,7 +1,10 @@
 import html
 from typing import Dict, Any, Optional
 from langchain_core.tools import tool
-from agentic_ai import config
+try:
+    import config
+except ImportError:
+    from agentic_ai import config
 
 
 def render_email_html(body: str, sender_email: Optional[str] = None) -> str:

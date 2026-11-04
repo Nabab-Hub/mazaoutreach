@@ -1,7 +1,10 @@
 import os
 from typing import Optional
 from langchain_core.language_models.chat_models import BaseChatModel
-from agentic_ai import config
+try:
+    import config
+except ImportError:
+    from agentic_ai import config
 
 
 def get_chat_model(
