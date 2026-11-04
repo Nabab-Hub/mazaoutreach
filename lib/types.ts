@@ -116,7 +116,7 @@ export interface Draft {
   type: 'initial' | 'followup_1' | 'followup_2' | 'reply';
   subject: string;
   body: string;
-  aiProvider: 'gemini' | 'openai' | 'grok' | 'mock';
+  aiProvider: 'gemini' | 'openai' | 'grok' | 'mock' | 'agentic-ai';
   model: string;
   status: 'pending' | 'approved' | 'edited' | 'rejected' | 'sent';
   editedSubject?: string;
@@ -183,7 +183,7 @@ export interface PersonalizeResult {
   confidence: number;
   reasoning: string;
   wordCount: number;
-  provider: 'gemini' | 'openai' | 'grok' | 'mock';
+  provider: 'gemini' | 'openai' | 'grok' | 'mock' | 'agentic-ai';
   model: string;
 }
 

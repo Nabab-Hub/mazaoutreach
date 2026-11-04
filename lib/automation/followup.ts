@@ -4,6 +4,7 @@ import { createDraft, getDrafts } from '../firebase/drafts';
 import { getSuppressionEntries } from '../firebase/suppression';
 import { aiRouter } from '../ai/router';
 import { ensureDefaultSignature, DEFAULT_EMAIL_SIGNATURE, COMPLIANCE_OPT_OUT } from '../templates/signature';
+import { callAgenticFollowup } from '../agentic-ai/client';
 
 export interface FollowUpCandidate {
   lead: Lead;
@@ -80,6 +81,30 @@ export async function generateFollowUpDraft(
   let body = '';
   let aiProvider: any = 'grok';
   let aiModel = 'qwen/qwen3.8-27b';
+
+  // 1. Try Agentic AI Follow-Up Generator
+  try {
+    const agenticRes = await callAgenticFollowup({
+      lead,
+      followupNumber: followUpNumber,
+    });
+    if (agenticRes?.draft?.body) {
+      console.log(`[FollowUp] Created Follow-up #${followUpNumber} via Agentic AI for ${lead.email}`);
+      return await createDraft({
+        leadId: lead.id,
+        type: followUpNumber === 1 ? 'followup_1' : 'followup_2',
+        subject: agenticRes.draft.subject || `Quick follow up regarding ${business}`,
+        body: ensureDefaultSignature(agenticRes.draft.body),
+        aiProvider: 'agentic-ai',
+        model: 'gemini-3.7-flash (LangGraph)',
+        status: 'pending',
+        confidence: agenticRes.draft.confidence || 0.94,
+        reasoning: agenticRes.draft.reasoning || `Agentic AI Follow-up #${followUpNumber} case study angle`,
+      });
+    }
+  } catch (err) {
+    console.info('[FollowUp] Agentic AI offline, using local follow-up drafter:', err);
+  }
 
   try {
     const prompt = `Write a short, professional, non-pushy follow-up email #${followUpNumber} to a prospective client who did not reply to our initial cold outreach.

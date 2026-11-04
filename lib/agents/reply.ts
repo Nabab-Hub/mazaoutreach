@@ -1,6 +1,7 @@
 import { aiRouter } from '../ai/router';
 import { ClassificationResult, Lead } from '../types';
 import { ensureDefaultSignature, DEFAULT_EMAIL_SIGNATURE } from '../templates/signature';
+import { callAgenticReply } from '../agentic-ai/client';
 
 export const SYSTEM_REPLY_DRAFTER_PROMPT = `Draft a polite, concise reply to a prospect. 
 Answer only what you know from the service list (web apps, mobile apps, SaaS, APIs, chatbots, custom ML automations). 
@@ -56,6 +57,26 @@ export async function draftReplyToProspect(opts: {
       subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
       body: `You have been removed from our outreach list. We apologize for any inconvenience.\n\n${DEFAULT_EMAIL_SIGNATURE}`,
     };
+  }
+
+  // Try Agentic AI Reply Agent
+  try {
+    const agenticRes = await callAgenticReply({
+      fromEmail: lead.email,
+      subject: replySubject,
+      body: replyBody,
+      previousOutreach,
+      leadId: lead.id,
+    });
+    if (agenticRes?.action_plan?.reply_body) {
+      console.log(`[ReplyAgent] Used Agentic AI response plan (${agenticRes.action_plan.action_type}) for ${lead.email}`);
+      return {
+        subject: agenticRes.action_plan.reply_subject || `Re: ${replySubject}`,
+        body: ensureDefaultSignature(agenticRes.action_plan.reply_body),
+      };
+    }
+  } catch (err) {
+    console.info('[ReplyAgent] Agentic AI offline, using local reply drafter:', err);
   }
 
   // AI draft for interested / questions

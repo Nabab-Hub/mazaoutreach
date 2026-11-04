@@ -2,6 +2,7 @@ import { aiRouter } from '../ai/router';
 import { getNicheTemplate } from '../templates/niche-templates';
 import { Lead, PersonalizeInput, PersonalizeResult } from '../types';
 import { ensureDefaultSignature } from '../templates/signature';
+import { callAgenticOutreach } from '../agentic-ai/client';
 
 export const SYSTEM_PERSONALIZE_PROMPT = `You write short, friendly, honest 1-to-1 cold emails for a software developer named Sk Ahidulla. 
 Services: modern responsive websites, mobile apps, SaaS, backend APIs, WhatsApp/chatbots, custom automations. 
@@ -31,6 +32,33 @@ Return strictly valid JSON with no markdown formatting:
 export async function generatePersonalizedDraft(input: PersonalizeInput): Promise<PersonalizeResult> {
   const { lead, fewShotExamples = [], customInstruction } = input;
   const template = input.nicheTemplate || getNicheTemplate(lead.niche);
+
+  // 1. Preferred Multi-Agent Execution via Agentic AI (LangGraph + LangSmith)
+  try {
+    const agenticData = await callAgenticOutreach({
+      ...lead,
+      notes: customInstruction
+        ? `${lead.notes || ''} [Custom User Request: ${customInstruction}]`.trim()
+        : lead.notes,
+    });
+
+    if (agenticData && agenticData.draft?.body) {
+      console.log(`[PersonalizeAgent] Successfully generated draft via Agentic AI Multi-Agent pipeline for ${lead.email}`);
+      const draftBody = agenticData.final_email_plain || agenticData.draft.body;
+      const finalBody = ensureDefaultSignature(draftBody);
+      return {
+        subject: agenticData.draft.subject || `Quick question regarding ${lead.businessName}`,
+        body: finalBody,
+        confidence: typeof agenticData.draft.confidence === 'number' ? agenticData.draft.confidence : 0.96,
+        reasoning: agenticData.draft.reasoning || `Agentic AI: ${agenticData.research?.recommended_angle || 'Tech Optimization'}`,
+        wordCount: agenticData.draft.word_count || finalBody.split(/\s+/).filter(Boolean).length,
+        provider: 'agentic-ai',
+        model: 'gemini-3.7-flash (LangGraph Multi-Agent)',
+      };
+    }
+  } catch (err) {
+    console.info('[PersonalizeAgent] Agentic AI server not available or returned error, falling back to local AI router:', err);
+  }
 
   // Construct prompt context
   let userPrompt = `### Lead Information:

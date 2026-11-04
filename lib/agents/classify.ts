@@ -1,5 +1,6 @@
 import { aiRouter } from '../ai/router';
 import { ClassificationResult, Lead, ReplyClassificationType } from '../types';
+import { callAgenticReply } from '../agentic-ai/client';
 
 export const SYSTEM_CLASSIFY_PROMPT = `Classify the reply into one of: interested, question, not_interested, unsubscribe, out_of_office, other.
 Return strictly valid JSON with no markdown formatting:
@@ -21,6 +22,38 @@ export async function classifyInboundReply(opts: {
   previousOutreach?: string;
 }): Promise<ClassificationResult> {
   const { replySubject, replyBody, lead, previousOutreach } = opts;
+
+  // 1. Try Agentic AI Classifier node (with Telegram alert & LangSmith tracing)
+  try {
+    const agenticRes = await callAgenticReply({
+      fromEmail: lead?.email || 'prospect@domain.com',
+      subject: replySubject,
+      body: replyBody,
+      previousOutreach,
+      leadId: lead?.id,
+    });
+
+    if (agenticRes && agenticRes.classification) {
+      const c = agenticRes.classification;
+      console.log(`[ClassifyAgent] Successfully classified reply via Agentic AI: ${c.classification} (Sentiment: ${c.sentiment})`);
+      return {
+        classification: c.classification as ReplyClassificationType,
+        sentiment: c.sentiment as any,
+        summary: c.key_question_or_intent || 'Inbound reply processed via Agentic AI',
+        needsHuman: c.classification === 'question' || c.urgency === 'high',
+        suggestedAction:
+          agenticRes.action_plan?.action_type === 'send_calendar'
+            ? 'schedule_meeting'
+            : c.classification === 'unsubscribe'
+            ? 'stop'
+            : 'send_reply',
+        confidence: c.confidence || 0.95,
+        reasoning: c.reasoning || 'Classified by Agentic AI LangGraph node',
+      };
+    }
+  } catch (err) {
+    console.info('[ClassifyAgent] Agentic AI server not available or returned error, falling back to local AI router:', err);
+  }
 
   // Build evaluation prompt
   let prompt = `### Prospect Reply:

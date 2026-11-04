@@ -25,7 +25,18 @@ export function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [agenticConnected, setAgenticConnected] = useState<boolean | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const fetchAgenticStatus = async () => {
+    try {
+      const res = await fetch('/api/agentic-ai/status');
+      const data = await res.json();
+      setAgenticConnected(!!data.connected);
+    } catch {
+      setAgenticConnected(false);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -42,8 +53,13 @@ export function Navbar() {
 
   useEffect(() => {
     fetchNotifications();
+    fetchAgenticStatus();
     const interval = setInterval(fetchNotifications, 15000);
-    return () => clearInterval(interval);
+    const agenticInterval = setInterval(fetchAgenticStatus, 20000);
+    return () => {
+      clearInterval(interval);
+      clearInterval(agenticInterval);
+    };
   }, []);
 
   // Close dropdown on outside click
@@ -104,6 +120,28 @@ export function Navbar() {
           <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
           <span>Multi-Provider AI Ready</span>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        </div>
+
+        <div
+          title={
+            agenticConnected
+              ? "Agentic AI Python Multi-Agent Engine is active (LangGraph + LangSmith Tracing)"
+              : "Agentic AI service is on standby; Next.js local fallback engine active. Start `python agentic-ai/server.py` to enable full LangGraph pipeline."
+          }
+          className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+            agenticConnected
+              ? "bg-emerald-950/40 border-emerald-800/50 text-emerald-300"
+              : "bg-slate-900/60 border-slate-800 text-slate-300"
+          }`}
+        >
+          <span
+            className={`w-2 h-2 rounded-full ${
+              agenticConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"
+            }`}
+          ></span>
+          <span>
+            {agenticConnected ? "Agentic AI: Online" : "Agentic AI: Standby"}
+          </span>
         </div>
 
         <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-800 text-slate-300 text-xs">

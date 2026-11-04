@@ -13,7 +13,8 @@ This guide covers all **Features** of the system and provides a step-by-step **H
    - [Method 1: Direct Command-Line CLI Testing](#method-1-direct-command-line-cli-testing)
    - [Method 2: Interactive Gradio Web UI Dashboard](#method-2-interactive-gradio-web-ui-dashboard)
    - [Method 3: Interactive FastAPI Web Microservice](#method-3-interactive-fastapi-web-microservice)
-   - [Method 4: Automated LangSmith Benchmarking](#method-4-automated-langsmith-benchmarking)
+   - [Method 4: Next.js Website Dashboard Integration](#method-4-nextjs-website-dashboard-integration)
+   - [Method 5: Automated LangSmith Benchmarking](#method-5-automated-langsmith-benchmarking)
 4. [🛡️ Zero-Downtime Multi-Tier LLM Fallback Cascade](#4-️-zero-downtime-multi-tier-llm-fallback-cascade)
 5. [📬 100% Primary Inbox Anti-Spam & Deliverability System](#5--100-primary-inbox-anti-spam--deliverability-system)
 6. [📱 Instant Telegram Alerts for Hot Leads](#6--instant-telegram-alerts-for-hot-leads)
@@ -196,7 +197,54 @@ Invoke-RestMethod -Uri "http://localhost:8000/api/v1/outreach" -Method Post -Con
 
 ---
 
-### Method 4: Automated LangSmith Benchmarking
+### Method 4: Next.js Website Dashboard Integration
+
+The Next.js web application is seamlessly linked to the `agentic-ai` Python multi-agent engine:
+
+```mermaid
+flowchart LR
+    Browser["Next.js Web UI<br/>(http://localhost:3000)"] --> NextBackend["Next.js Route Handlers<br/>(lib/agents/*)"]
+    NextBackend -->|1. Try First| AgenticClient["lib/agentic-ai/client.ts"]
+    AgenticClient -->|HTTP POST| FastAPI["Agentic AI FastAPI<br/>(http://localhost:8000)"]
+    FastAPI --> LangGraph["5-Agent LangGraph Engine<br/>+ LangSmith Tracing + Telegram"]
+    AgenticClient -.->|2. Offline / Timeout Fallback| LocalRouter["Local Built-in AI Router<br/>(Direct LLM)"]
+```
+
+#### How the Web Integration Works:
+1. **Cold Outreach Personalization (`lib/agents/personalize.ts`):**
+   - When generating email drafts in the Leads or Pipeline view, Next.js calls `callAgenticOutreach()`.
+   - The Python `ResearchAgent` investigates the prospect's company and technical stack, `CopywriterAgent` crafts an authentic 80–130 word email, and the deliverability scanner verifies a 0.0 spam score.
+   - If the FastAPI microservice is offline, Next.js instantly falls back to the internal AI generator without user interruption.
+2. **Inbound Reply Classification (`lib/agents/classify.ts`):**
+   - Classifies customer replies using Agentic AI's structured 7-category classifier.
+   - Dispatches instant Telegram push alerts for high-value leads (`interested`, `question`).
+3. **Response & Calendly Automation (`lib/agents/reply.ts`):**
+   - Formulates context-aware replies with your Calendly booking link.
+4. **Smart Follow-Up Cadence (`lib/automation/followup.ts`):**
+   - Automatically drafts personalized Step 1, Step 2, and Step 3 follow-ups.
+5. **Real-Time Status Pill in Navbar:**
+   - The top navigation bar includes an **"Agentic AI: Online"** indicator (pulsing green dot) when the Python service is active, and **"Agentic AI: Standby"** (amber dot) when running on local fallback.
+
+#### How to Run Both Services Together:
+Open two separate terminal windows in your project directory:
+
+**Terminal 1 (Agentic AI Python Engine):**
+```powershell
+python agentic-ai/server.py
+```
+*(Starts on `http://localhost:8000`)*
+
+**Terminal 2 (Next.js Web Dashboard):**
+```powershell
+npm run dev
+```
+*(Starts on `http://localhost:3000`)*
+
+Open **`http://localhost:3000`** in your browser. The Navbar will show **"Agentic AI: Online"**, and all outreach drafts, classifications, and follow-ups will be processed by the 5-agent LangGraph system with full LangSmith tracing.
+
+---
+
+### Method 5: Automated LangSmith Benchmarking
 
 To run automated quality and deliverability test assertions:
 ```powershell
