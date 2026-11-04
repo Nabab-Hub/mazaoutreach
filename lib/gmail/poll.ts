@@ -151,13 +151,14 @@ export async function processInboundReply(opts: {
   }
 
   // 5. Automatic reply dispatch:
-  // If the lead is interested or asked a straightforward question without requiring manual intervention,
-  // automatically send the generated AI reply directly in thread!
+  // Safety rule: By default, ALL generated AI reply drafts are placed in the Approval Queue (status: 'pending')
+  // for human review and approval. Automatic email sending is strictly disabled unless explicitly enabled via ENABLE_AUTO_REPLY=true.
   let autoReplied = false;
+  const isAutoReplyAllowed = process.env.ENABLE_AUTO_REPLY === 'true';
   const isInterestedOrQuestion =
     classification.classification === 'interested' || classification.classification === 'question';
 
-  if (isInterestedOrQuestion && !classification.needsHuman) {
+  if (isAutoReplyAllowed && isInterestedOrQuestion && !classification.needsHuman) {
     try {
       const accounts = await getAccounts();
       const accountToUse =
@@ -170,7 +171,7 @@ export async function processInboundReply(opts: {
         accountToUse.encryptedRefreshToken &&
         !accountToUse.encryptedRefreshToken.includes('mock_')
       ) {
-        console.log(`[AutoReply] Automatically dispatching response to ${lead.email} via ${accountToUse.gmailAddress}...`);
+        console.log(`[AutoReply] Explicitly configured to auto-dispatch response to ${lead.email} via ${accountToUse.gmailAddress}...`);
         await sendOutreachEmail({
           lead,
           draft: createdDraft,
@@ -192,6 +193,8 @@ export async function processInboundReply(opts: {
     } catch (sendErr: any) {
       console.warn('[AutoReply] Automatic reply dispatch failed, kept in approval queue:', sendErr.message);
     }
+  } else {
+    console.log(`[ApprovalQueue] Draft reply ${createdDraft.id} queued in pending status for human review.`);
   }
 
   // 6. Construct and Save Reply Record
@@ -470,12 +473,12 @@ export async function pollActiveInboxes(): Promise<PollResult> {
 
 export function startInboxPollerDaemon() {
   if (globalThis.__inboxPollerInterval) return;
-  console.log('[PollEngine] Background poller daemon started (every 60s).');
+  console.log('[PollEngine] Background poller daemon started (every 20s).');
   globalThis.__inboxPollerInterval = setInterval(async () => {
     try {
       await pollActiveInboxes();
     } catch (e: any) {
       console.warn('[PollEngine] Daemon poll cycle error:', e.message);
     }
-  }, 60000);
+  }, 20000);
 }

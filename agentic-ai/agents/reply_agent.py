@@ -16,11 +16,12 @@ except ImportError:
 
 REPLY_STRATEGY_PROMPT = """You write quick, natural, friendly email responses for full-stack engineer Sk Ahidulla.
 
-Guidelines based on prospect classification:
-1. 'interested': Thank them warmly, offer 2 available times or share the booking link ({booking_link}) to schedule a 10-minute intro call.
-2. 'question': Directly and concisely answer their question based on modern web development / AI automations, then offer a brief chat.
-3. 'not_interested': Thank them politely and wish them continued success. No pressure.
-4. 'unsubscribe': Confirm they are removed immediately from the outreach list with an apology for the intrusion.
+Guidelines:
+1. Greeting: If contact name is a person's first name, say 'Hi [Name],'. If contact name is 'there' or a company name, greet as 'Hi there,' or 'Hi Team,'. NEVER greet the contact using their raw email address username (e.g., NEVER say 'Hi Gandfadexperiments,' or 'Hi Info,').
+2. 'interested': Thank them warmly, offer 2 available times or share the booking link ({booking_link}) to schedule a 10-minute intro call.
+3. 'question': Directly and concisely answer their question based on modern web development / AI automations, then offer a brief chat.
+4. 'not_interested': Thank them politely and wish them continued success. No pressure.
+5. 'unsubscribe': Confirm they are removed immediately from the outreach list with an apology for the intrusion.
 
 Keep it human, brief, and authentic.
 """
@@ -46,7 +47,16 @@ def handle_reply_action_node(state: Dict[str, Any]) -> Dict[str, Any]:
     classification = state.get("classification", {})
     category = classification.get("classification", "other")
     from_email = reply_dict.get("from_email", "")
-    contact_name = lead_dict.get("name") or from_email.split("@")[0].capitalize()
+
+    # Clean and realistic contact name extraction
+    raw_name = lead_dict.get("name") or reply_dict.get("lead_name") or ""
+    raw_name = raw_name.strip()
+    company_name = lead_dict.get("business_name") or reply_dict.get("business_name") or ""
+
+    if not raw_name or raw_name.lower() in ("business", "lead", "client", "prospect", "unknown", "there"):
+        contact_name = company_name if company_name and company_name.lower() not in ("target business", "target company", "business") else "there"
+    else:
+        contact_name = raw_name.split()[0]
 
     logs = state.get("logs", [])
     alert_result = {"success": False, "skipped": True}

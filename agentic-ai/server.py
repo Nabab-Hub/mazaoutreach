@@ -53,6 +53,8 @@ class ReplyPayload(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default="")
     lead_id: str = Field(default="")
+    lead_name: str = Field(default="")
+    business_name: str = Field(default="")
     from_email: str
     subject: str = Field(default="")
     body: str

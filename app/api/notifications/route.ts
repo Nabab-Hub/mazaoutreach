@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppNotification } from '@/lib/types';
-import { startInboxPollerDaemon } from '@/lib/gmail/poll';
+import { startInboxPollerDaemon, pollActiveInboxes } from '@/lib/gmail/poll';
 import { getAdminDb } from '@/lib/firebase/admin';
 
 // Global mock notifications store for session persistence
 declare global {
   var __mockNotifications: AppNotification[] | undefined;
+  var __lastAutoPollTime: number | undefined;
 }
 
 if (!globalThis.__mockNotifications) {
@@ -15,6 +16,15 @@ if (!globalThis.__mockNotifications) {
 export async function GET() {
   try {
     startInboxPollerDaemon();
+
+    // Auto-poll inboxes on notification cycle if at least 15s elapsed
+    const now = Date.now();
+    if (!globalThis.__lastAutoPollTime || now - globalThis.__lastAutoPollTime >= 15000) {
+      globalThis.__lastAutoPollTime = now;
+      pollActiveInboxes().catch((pollErr: any) =>
+        console.warn('[AutoPoll] Background poll error:', pollErr.message)
+      );
+    }
 
     let notifs: AppNotification[] = globalThis.__mockNotifications || [];
     const db = getAdminDb();

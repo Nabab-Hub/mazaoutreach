@@ -42,12 +42,16 @@ export async function draftReplyToProspect(opts: {
     process.env.CALENDAR_BOOKING_LINK ||
     'https://cal.com/skahidulla/10min';
 
+  const rawName = (lead.name || '').trim();
+  const isGeneric = !rawName || ['business', 'lead', 'client', 'prospect', 'unknown'].includes(rawName.toLowerCase());
+  const greetingName = isGeneric ? (lead.businessName || 'there') : rawName.split(' ')[0];
+
   // Fast-path for not interested
   if (classification.classification === 'not_interested') {
-    const firstName = lead.name ? lead.name.split(' ')[0] : 'there';
+    const greeting = isGeneric ? 'Hi there' : `Hi ${greetingName}`;
     return {
       subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
-      body: ensureDefaultSignature(`Hi ${firstName},\n\nThank you for letting me know! Wishing you and ${lead.businessName} continued success.`),
+      body: ensureDefaultSignature(`${greeting},\n\nThank you for letting me know! Wishing you and ${lead.businessName} continued success.`),
     };
   }
 
@@ -67,6 +71,8 @@ export async function draftReplyToProspect(opts: {
       body: replyBody,
       previousOutreach,
       leadId: lead.id,
+      leadName: isGeneric ? (lead.businessName || 'there') : rawName,
+      businessName: lead.businessName,
     });
     if (agenticRes?.action_plan?.reply_body) {
       console.log(`[ReplyAgent] Used Agentic AI response plan (${agenticRes.action_plan.action_type}) for ${lead.email}`);
@@ -81,9 +87,10 @@ export async function draftReplyToProspect(opts: {
 
   // AI draft for interested / questions
   const prompt = `### Prospect Info:
-- Name: ${lead.name}
+- Contact Name: ${greetingName}
 - Business: ${lead.businessName}
 - Niche: ${lead.niche}
+(Note: Never address the prospect by their email username or generic words like 'Business'. Greet as 'Hi ${greetingName},' or 'Hi there,')
 
 ### Prospect Reply:
 """
@@ -123,10 +130,10 @@ Draft the reply adhering to the rules.`;
     return { subject, body };
   } catch (err) {
     console.warn('[ReplyDrafter] AI drafting failed, using fallback template:', err);
-    const firstName = lead.name ? lead.name.split(' ')[0] : 'there';
+    const greeting = isGeneric ? 'Hi there' : `Hi ${greetingName}`;
     return {
       subject: replySubject.startsWith('Re:') ? replySubject : `Re: ${replySubject}`,
-      body: ensureDefaultSignature(`Hi ${firstName},\n\nThanks for getting back to me! I'd love to learn more about ${lead.businessName} and explore how we can tailor this for your team.\n\nWould you be open to picking a quick 10-15 minute slot here?\n${calendarLink}\n\nLooking forward to speaking!`),
+      body: ensureDefaultSignature(`${greeting},\n\nThanks for getting back to me! I'd love to learn more about ${lead.businessName} and explore how we can tailor this for your team.\n\nWould you be open to picking a quick 10-15 minute slot here?\n${calendarLink}\n\nLooking forward to speaking!`),
     };
   }
 }

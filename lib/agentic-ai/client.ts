@@ -150,6 +150,8 @@ export async function callAgenticReply(opts: {
   body: string;
   previousOutreach?: string;
   leadId?: string;
+  leadName?: string;
+  businessName?: string;
 }, timeoutMs = 45000): Promise<AgenticReplyResponse | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -158,6 +160,8 @@ export async function callAgenticReply(opts: {
     const payload = {
       id: `rep_${Date.now()}`,
       lead_id: opts.leadId || '',
+      lead_name: opts.leadName || '',
+      business_name: opts.businessName || '',
       from_email: opts.fromEmail,
       subject: opts.subject,
       body: opts.body,
