@@ -11,8 +11,9 @@ This guide covers all **Features** of the system and provides a step-by-step **H
 2. [🤖 Specialized Agent Ecosystem](#2--specialized-agent-ecosystem)
 3. [🚀 Step-by-Step: How to Use](#3--step-by-step-how-to-use)
    - [Method 1: Direct Command-Line CLI Testing](#method-1-direct-command-line-cli-testing)
-   - [Method 2: Interactive FastAPI Web Microservice](#method-2-interactive-fastapi-web-microservice)
-   - [Method 3: Automated LangSmith Benchmarking](#method-3-automated-langsmith-benchmarking)
+   - [Method 2: Interactive Gradio Web UI Dashboard](#method-2-interactive-gradio-web-ui-dashboard)
+   - [Method 3: Interactive FastAPI Web Microservice](#method-3-interactive-fastapi-web-microservice)
+   - [Method 4: Automated LangSmith Benchmarking](#method-4-automated-langsmith-benchmarking)
 4. [🛡️ Zero-Downtime Multi-Tier LLM Fallback Cascade](#4-️-zero-downtime-multi-tier-llm-fallback-cascade)
 5. [📬 100% Primary Inbox Anti-Spam & Deliverability System](#5--100-primary-inbox-anti-spam--deliverability-system)
 6. [📱 Instant Telegram Alerts for Hot Leads](#6--instant-telegram-alerts-for-hot-leads)
@@ -120,7 +121,52 @@ python agentic-ai/run_reply.py
 
 ---
 
-### Method 2: Interactive FastAPI Web Microservice
+### Method 2: Interactive Gradio Web UI Dashboard
+
+The directory `agentic-ai/ui/` contains a fully functional, visual web dashboard powered by **Gradio**. It connects to the FastAPI microservice (`http://localhost:8000`) and has an automatic fallback to the direct engine if the server is offline.
+
+#### Launching the UI:
+```powershell
+python agentic-ai/ui/app.py
+```
+Open your browser at: **`http://localhost:7860`**
+
+#### What is available in the UI:
+1. **🎯 1. Cold Outreach Generator:**
+   - Input prospect details (Name, Business, Email, Niche, Description, Website, City, Notes).
+   - Click **"📋 Load Clinic Lead"** or **"📋 Load SaaS Lead"** for instant sample data.
+   - Click **"⚡ Run Outreach Pipeline"** to watch the multi-agent pipeline execute.
+   - **Outputs Displayed:**
+     - Approval Status badge (e.g., `✅ APPROVED`) & Deliverability score (`0.0 / 1.0`).
+     - Subject Line & Plain-Text Email (with Sk Ahidulla signature).
+     - **Live HTML Email Preview** showing the actual Top Unsubscribe button and responsive typography.
+     - Deep Research Insights (Summary, Bottlenecks, Recommended Pitch Angle).
+     - Expandable Execution Logs.
+
+2. **📩 2. Inbound Reply & Telegram Alert:**
+   - Input incoming email message, subject, from-email, and previous outreach context.
+   - Quick-load buttons: **"🔥 Interested Lead"**, **"❓ Technical Question"**, **"🚫 Unsubscribe Request"**.
+   - Click **"🤖 Classify & Formulate Action"**.
+   - **Outputs Displayed:**
+     - Classification card (`INTERESTED`, `QUESTION`, `UNSUBSCRIBE`).
+     - Sentiment, Urgency, Confidence, and Extracted Intent.
+     - **Telegram Alert Dispatch Status** (`🔔 Alert Sent to Telegram!`).
+     - Drafted Response to prospect with Calendly scheduling link.
+
+3. **🔄 3. Follow-Up Generator:**
+   - Input lead name, business, initial subject sent, and initial pitch context.
+   - Select Follow-Up Step: `1`, `2`, or `3`.
+   - Click **"✍️ Generate Follow-Up Email"**.
+   - **Outputs Displayed:** Context-aware thread subject (`Re: ...`), friendly follow-up message, word count, and strategic reasoning.
+
+4. **📊 4. System Status & LangSmith:**
+   - Live connectivity badge: indicates whether connected to the **FastAPI Microservice** (`http://localhost:8000`) or running in **Direct Engine Mode**.
+   - Active LLM model, LangSmith tracing status, and Telegram alert status.
+   - Direct clickable links to the **LangSmith Dashboard** and **FastAPI Swagger Docs**.
+
+---
+
+### Method 3: Interactive FastAPI Web Microservice
 
 You can launch the FastAPI server to connect the Python multi-agent system to your Next.js dashboard, webhooks, or external tools:
 
@@ -150,7 +196,7 @@ Invoke-RestMethod -Uri "http://localhost:8000/api/v1/outreach" -Method Post -Con
 
 ---
 
-### Method 3: Automated LangSmith Benchmarking
+### Method 4: Automated LangSmith Benchmarking
 
 To run automated quality and deliverability test assertions:
 ```powershell
