@@ -31,10 +31,32 @@ export async function GET() {
       }
     }
 
+    // Deduplicate notifications with identical title and message body
+    const seenNotifKeys = new Set<string>();
+    const uniqueNotifs: AppNotification[] = [];
+    const duplicateIdsToDelete: string[] = [];
+
+    for (const item of notifs) {
+      const key = `${item.leadId || ''}_${item.title}_${(item.message || '').slice(0, 60)}`;
+      if (!seenNotifKeys.has(key)) {
+        seenNotifKeys.add(key);
+        uniqueNotifs.push(item);
+      } else {
+        duplicateIdsToDelete.push(item.id);
+      }
+    }
+
+    // Clean up duplicate records from Firestore in background
+    if (db && duplicateIdsToDelete.length > 0 && process.env.NEXT_PUBLIC_DEMO_MODE !== 'true') {
+      Promise.all(duplicateIdsToDelete.map((dupId) => db.collection('notifications').doc(dupId).delete())).catch(() => {});
+    }
+
+    globalThis.__mockNotifications = uniqueNotifs;
+
     return NextResponse.json({
       success: true,
-      notifications: notifs,
-      unreadCount: notifs.filter((n) => !n.read).length,
+      notifications: uniqueNotifs,
+      unreadCount: uniqueNotifs.filter((n) => !n.read).length,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

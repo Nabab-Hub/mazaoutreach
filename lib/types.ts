@@ -89,6 +89,7 @@ export interface SentEmail {
   subject: string;
   body: string;
   messageId: string;
+  gmailMessageId?: string;
   threadId: string;
   type: 'initial' | 'followup_1' | 'followup_2' | 'reply';
   sentAt: string;
@@ -218,6 +219,7 @@ export interface Reply {
   snippet: string;
   body: string;
   messageId: string;
+  gmailMessageId?: string;
   threadId: string;
   receivedAt: string;
   classification: ReplyClassificationType;

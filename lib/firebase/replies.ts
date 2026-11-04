@@ -93,7 +93,12 @@ export async function saveReply(reply: Reply): Promise<Reply> {
   }
 
   mockReplies = globalForReplies.__mockReplies || mockReplies;
-  const existingIdx = mockReplies.findIndex((r) => r.id === reply.id);
+  const existingIdx = mockReplies.findIndex(
+    (r) =>
+      r.id === reply.id ||
+      (r.messageId && reply.messageId && r.messageId === reply.messageId) ||
+      ((r as any).gmailMessageId && (reply as any).gmailMessageId && (r as any).gmailMessageId === (reply as any).gmailMessageId)
+  );
   if (existingIdx !== -1) {
     mockReplies[existingIdx] = reply;
   } else {
